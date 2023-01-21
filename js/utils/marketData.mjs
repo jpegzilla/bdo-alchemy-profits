@@ -1,6 +1,9 @@
+import axios from 'axios'
+import { Blob } from 'buffer'
+
 const ROOT_URL = 'https://na-trade.naeu.playblackdesert.com/Trademarket'
 const WORLD_MARKET_LIST = 'GetWorldMarketList'
-// const WORLD_MARKET_PRICES = 'GetMarketPriceInfo'
+const WORLD_MARKET_PRICES = 'GetMarketPriceInfo'
 const CONSUMABLE_CATEGORY = 35
 const CONSUMABLE_SUBCATEGORIES = {
   OFFENSIVE: 1,
@@ -18,18 +21,23 @@ export const getConsumableMarketData = async (
     )
   }
 
-  const list = await fetch(`${ROOT_URL}/${WORLD_MARKET_LIST}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'BlackDesert',
-    },
-    body: {
+  const url = `${ROOT_URL}/${WORLD_MARKET_LIST}`
+
+  const response = await axios.post(
+    url,
+    {
       keyType: 0,
       mainCategory: CONSUMABLE_CATEGORY,
       subCategory,
     },
-  })
+    {
+      'Content-Type': 'application/json',
+      'User-Agent': 'BlackDesert',
+      // 'X-Requested-With': 'bdoap',
+    }
+  )
 
-  console.log(list)
+  const data = Buffer.from(response.data).toJSON().data
+
+  console.log(data)
 }
