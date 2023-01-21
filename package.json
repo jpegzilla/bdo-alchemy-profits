@@ -1,0 +1,17 @@
+{
+  "name": "bdo-alchemy-profits",
+  "version": "1.0.0",
+  "description": "a tool to find profitable alchemy recipes in black desert online",
+  "main": "index.js",
+  "author": "eris <eris@jpegzilla.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^1.2.3",
+    "prettier": "^2.6.0"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "build": "npx tauri build",
+    "dev": "npx tauri dev"
+  }
+}
