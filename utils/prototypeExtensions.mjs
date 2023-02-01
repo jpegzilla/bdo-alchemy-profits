@@ -34,12 +34,6 @@ Object.defineProperty(Object.prototype, 'keys', {
   },
 })
 
-Object.defineProperty(Object.prototype, 'entries', {
-  get: function () {
-    return Object.entries(this)
-  },
-})
-
 /**
  * Number.sum
  * adds all the numbers in an array together, returning the sum

@@ -6,16 +6,17 @@
   "author": "eris <eris@jpegzilla.com>",
   "license": "MIT",
   "devDependencies": {
-    "@tauri-apps/cli": "^1.2.3",
     "prettier": "^2.6.0"
   },
   "scripts": {
-    "swm": "npx sass --watch --style=compressed ./css/main.sass:./css/main.min.css",
     "format": "prettier --write .",
-    "build": "npx tauri build",
-    "dev": "npx tauri dev"
+    "start": "NODE_NO_WARNINGS=1 node main.mjs",
+    "dev": "nodemon main.js"
   },
   "dependencies": {
-    "axios": "^1.2.3"
+    "axios": "^1.2.3",
+    "chalk": "^5.2.0",
+    "puppeteer": "^19.6.2",
+    "readline-sync": "^1.4.10"
   }
 }
