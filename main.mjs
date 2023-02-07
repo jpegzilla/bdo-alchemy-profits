@@ -1,4 +1,3 @@
-import './utils/prototypeExtensions.mjs'
 import readline from 'readline-sync'
 import chalk from 'chalk'
 
@@ -43,6 +42,9 @@ console.log(
   )} consumables are profitable today~ ♫`
 )
 
-await getConsumableMarketData(subcategory)
+const main = async () => {
+  await getConsumableMarketData(subcategory)
+  process.exit()
+}
 
-process.exit()
+main()

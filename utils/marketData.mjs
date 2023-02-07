@@ -1,5 +1,5 @@
 import axios from 'axios'
-import env from './../env.json' assert { type: 'json' }
+import env from './../env.js'
 import chalk from 'chalk'
 
 import { getItemCodexData } from './itemData.mjs'

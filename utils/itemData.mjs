@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer'
 import axios from 'axios'
 import chalk from 'chalk'
+import fs from 'fs'
 
 const ROOT_URL = 'https://bdocodex.com/us/item/'
 
@@ -44,6 +45,8 @@ const minimalPuppeteerArgs = [
 ]
 
 export const getItemCodexData = async itemIdList => {
+  const stream = fs.createWriteStream('error.log', { flags: 'a' })
+
   console.log(
     `\nI'm getting the ${chalk.cyan(
       'recipe book.'
@@ -56,6 +59,18 @@ export const getItemCodexData = async itemIdList => {
     ignoreHTTPSErrors: true,
     userDataDir: './puppeteer_cache',
   })
+
+  const killBrowser = () => {
+    if (browser && browser.process() != null) browser.process().kill('SIGINT')
+  }
+
+  // in the words of the great calliope mori
+  // ごめん、失礼しますが死んでください
+  process.on('exit', killBrowser)
+  process.on('SIGINT', killBrowser)
+  process.on('SIGUSR1', killBrowser)
+  process.on('SIGUSR2', killBrowser)
+  process.on('uncaughtException', killBrowser)
 
   const recipes = []
 
@@ -117,24 +132,23 @@ export const getItemCodexData = async itemIdList => {
     } catch (e) {
       console.log(
         chalk.red(
-          '=================== ERROR (ERIS HAS FUCKED UP) ===================\n'
+          "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla (that's me!)\n"
         )
       )
-      console.log(
-        "if you're not messing with the code, you should never see this. tell @jpegzilla (that's eris)"
-      )
-      console.log(`${itemId}, ${name}`)
-      console.error('the bdocodex parser thing has broken. output:\n')
-      console.error(e)
-      console.log(
-        chalk.red(
-          '\n=================== ERROR (ERIS HAS FUCKED UP) ==================='
-        )
+
+      stream.write(
+        `=================== ERROR ===================
+[${url}] ${itemId}, ${name} (${new Date().toISOString()})
+the bdocodex parser thing has broken. output:
+      ${JSON.stringify(e, null, 3)}
+
+      `
       )
     }
   }
 
   await browser.close()
+  stream.end()
 
   process.stdout.cursorTo(0)
   process.stdout.clearLine()
