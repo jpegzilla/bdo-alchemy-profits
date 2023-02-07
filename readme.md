@@ -22,3 +22,8 @@ if you have node.js installed on your computer, you can use the source code.
 work in progress.
 
 I'm trying to package this up into an executable, but it's making me regret even writing this in javascript. HELP. I have tried `pkg`, `nexe`, `babel` + `ncc` + `pkg`, `warp`, `babel` + `nexe`, and a few other things I can't even remember. I have no clue what to do.
+
+todo:
+
+-   [ ] cache ingredient prices
+-   [ ] add option to search for all possible alchemy consumables
