@@ -30,9 +30,11 @@ const START = 0
 const formatNum = num => Intl.NumberFormat('en-US').format(num)
 
 export const getConsumableMarketData = async (subcategory = 'offensive') => {
-  if (!CONSUMABLE_SUBCATEGORIES.keys.includes(subcategory)) {
+  if (!Object.keys(CONSUMABLE_SUBCATEGORIES).includes(subcategory)) {
     throw new TypeError(
-      `subcategory must be one of: ${CONSUMABLE_SUBCATEGORIES.keys.join(', ')}`
+      `subcategory must be one of: ${Object.keys(CONSUMABLE_SUBCATEGORIES).join(
+        ', '
+      )}`
     )
   }
 
