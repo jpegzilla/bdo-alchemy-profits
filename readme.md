@@ -27,3 +27,6 @@ todo:
 
 -   [ ] cache ingredient prices
 -   [ ] add option to search for all possible alchemy consumables
+-   [ ] account for market tax
+-   [ ] warn about low daily volume for ingredients and consumables
+-   [ ] add a `--silent` or `--minimal` option to just show bare output
