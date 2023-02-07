@@ -6,6 +6,7 @@
   "author": "eris <eris@jpegzilla.com>",
   "private": "true",
   "license": "MIT",
+  "type": "module",
   "devDependencies": {
     "@babel/cli": "^7.20.7",
     "@babel/core": "^7.20.12",
