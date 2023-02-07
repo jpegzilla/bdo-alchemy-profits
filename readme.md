@@ -10,6 +10,9 @@ finally, if you really want to make profit on the market, you basically have to 
 
 ## how to use
 
-if you have node.js installed on your computer, you can use the source code. clone this repo and run `yarn start` from the project directory.
+if you have node.js installed on your computer, you can use the source code.
 
-otherwise, go to the _releases_ tab above and download an executable file, which should work out of the box - at least on windows.
+1.  clone this repo
+2.  install yarn (`npm i -g yarn`)
+3.  install dependencies (`yarn`)
+4.  run the script (`yarn start`)
