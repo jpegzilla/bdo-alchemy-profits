@@ -45,7 +45,7 @@ const minimalPuppeteerArgs = [
 ]
 
 export const getItemCodexData = async itemIdList => {
-  const stream = fs.createWriteStream('error.log', { flags: 'a' })
+  const stream = fs.createWriteStream('./error.log', { flags: 'a' })
 
   console.log(
     `\nI'm getting the ${chalk.cyan(
