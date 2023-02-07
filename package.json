@@ -21,10 +21,7 @@
     "format": "prettier --write .",
     "start": "NODE_NO_WARNINGS=1 node main.mjs",
     "dev": "nodemon main.js",
-    "babby": "BABEL_ENV=minify npx babel ./ -d ./dist --plugins @babel/plugin-transform-modules-commonjs --ignore dist",
-    "build": "ncc build ./dist/main.js -o ./dist/ncc -m",
-    "package": "pkg --target node16-win-x64 -o ./dist/bin/bdo-ap.exe ./dist/ncc/index.js",
-    "compilemorelikecumpile": "yarn run babby && yarn run build && yarn run package"
+    "compilemorelikecumpile": "ncc build main.mjs -o ./dist/ncc"
   },
   "dependencies": {
     "axios": "0.27.2",
