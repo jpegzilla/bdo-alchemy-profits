@@ -1,6 +1,8 @@
 # bdo (market) alchemy profit tool
 
-this is a tool that searches the central market for potions that you can make profit on just by buying all the ingredients and selling the result.
+this is a tool that searches the central market for potions and other items that you can make profit on just by buying all the ingredients and selling the result.
+
+![an example readout from the script](./screenshots/example_one.png)
 
 of course, there are usually none of these! sometimes there are a few, but they're typically very low volume, limiting total profits. BUT, if there are any, this tool will find them!
 
@@ -16,6 +18,9 @@ if you have node.js installed on your computer, you can use the source code.
 2.  install yarn (`npm i -g yarn`)
 3.  install dependencies (`yarn`)
 4.  run the script (`yarn start`)
+5.  pick a category to search in and wait! it may take a while, as the script scrapes bdocodex.com for recipe information.
+
+![the script options selection](./screenshots/example_two.png)
 
 ### standalone executable
 
@@ -30,3 +35,4 @@ todo:
 -   [x] account for market tax
 -   [x] warn about low daily volume for ingredients and consumables
 -   [ ] add a `--silent` or `--minimal` option to just show bare output
+-   [ ] **critical:** figure out how to get recipe information without scraping bdocodex. this would speed up the script by a huge amount.
