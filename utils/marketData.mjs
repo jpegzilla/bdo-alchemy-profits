@@ -1,10 +1,20 @@
 import axios from 'axios'
-import env from './../env.js'
+import env from './../env.mjs'
 import chalk from 'chalk'
 
 import { getItemCodexData } from './itemData.mjs'
+import { getItemPriceInfo, getAllRecipePrices } from './itemPriceInfo.mjs'
 
-const { RVT, COOKIE, BATCH_SIZE = Infinity, HIDE_UNPROFITABLE_RECIPES } = env
+const {
+  RVT,
+  COOKIE,
+  BATCH_SIZE = Infinity,
+  HIDE_UNPROFITABLE_RECIPES,
+  ROOT_URL,
+  WORLD_MARKET_LIST,
+  MARKET_SEARCH_LIST,
+  REQUEST_OPTS,
+} = env
 
 if (!RVT || !COOKIE) {
   throw new Error(
@@ -14,23 +24,53 @@ if (!RVT || !COOKIE) {
   )
 }
 
-const ROOT_URL = 'https://na-trade.naeu.playblackdesert.com/Home'
-const WORLD_MARKET_LIST = '/GetWorldMarketList'
-const MARKET_SUB_LIST = '/GetWorldMarketSubList'
 const CONSUMABLE_CATEGORY = 35
 const CONSUMABLE_SUBCATEGORIES = {
   offensive: 1,
   defensive: 2,
   functional: 3,
   potion: 5,
+  all: [1, 2, 3, 5],
 }
 
 const START = 0
 
-const formatNum = num => Intl.NumberFormat('en-US').format(num)
+const INGREDIENT_CACHE = {}
 
-export const getConsumableMarketData = async (subcategory = 'offensive') => {
-  if (!Object.keys(CONSUMABLE_SUBCATEGORIES).includes(subcategory)) {
+const retryFailedRequest = err => {
+  if (err.status === 500 && err.config && !err.config.__isRetryRequest) {
+    err.config.__isRetryRequest = true
+
+    return axios(err.config)
+  }
+
+  throw err
+}
+
+axios.interceptors.response.use(undefined, retryFailedRequest)
+
+let nonPotionSubCategory = false
+
+export const getConsumableMarketData = async (
+  subcategory = 'offensive',
+  allSubcategories = false
+) => {
+  if (
+    [
+      'blood',
+      'oil',
+      'alchemy stone',
+      'reagent',
+      'black stone',
+      'magic crystal',
+    ].includes(subcategory)
+  )
+    nonPotionSubCategory = true
+
+  if (
+    !Object.keys(CONSUMABLE_SUBCATEGORIES).includes(subcategory) &&
+    nonPotionSubCategory === false
+  ) {
     throw new TypeError(
       `subcategory must be one of: ${Object.keys(CONSUMABLE_SUBCATEGORIES).join(
         ', '
@@ -39,42 +79,202 @@ export const getConsumableMarketData = async (subcategory = 'offensive') => {
   }
 
   const url = `${ROOT_URL}${WORLD_MARKET_LIST}`
-
-  const response = await axios.post(
-    url,
-    `${RVT}&mainCategory=${CONSUMABLE_CATEGORY}&subcategory=${CONSUMABLE_SUBCATEGORIES[subcategory]}`,
-    {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        Cookie: COOKIE,
-      },
-    }
-  )
-
-  if (!response || !response?.data) {
-    throw new Error(
-      'there was an issue communicating with the black desert api. check your token / cookie.'
-    )
+  const searchURL = `${ROOT_URL}${MARKET_SEARCH_LIST}`
+  let consumableResponse = {
+    data: {
+      marketList: [],
+    },
   }
 
-  const data = response.data?.marketList
+  let aggregateResponse
+
+  const doIfCategoryMatches = async (subcat, cb) => {
+    if (subcategory === subcat || allSubcategories) await cb()
+  }
+
+  if (allSubcategories || nonPotionSubCategory) {
+    if (!nonPotionSubCategory) {
+      for (const subCatId of CONSUMABLE_SUBCATEGORIES.all) {
+        const response = await axios.post(
+          url,
+          `${RVT}&mainCategory=${CONSUMABLE_CATEGORY}&subcategory=${subCatId}`,
+          REQUEST_OPTS
+        )
+
+        if (!response || !response?.data) {
+          throw new Error(
+            'there was an issue communicating with the black desert api. check your token / cookie. (all categories)'
+          )
+        }
+
+        const data = response.data?.marketList
+
+        consumableResponse.data.marketList = [
+          ...consumableResponse.data.marketList,
+          ...data,
+        ]
+      }
+    }
+
+    let blackStoneResponse = []
+    await doIfCategoryMatches('black stone', async () => {
+      blackStoneResponse = await axios.post(
+        url,
+        `${RVT}&mainCategory=30&subcategory=1`,
+        REQUEST_OPTS
+      )
+    })
+
+    let bloodResponse = []
+    await doIfCategoryMatches('blood', async () => {
+      bloodResponse = await axios.post(
+        searchURL,
+        `${RVT}&searchText='s+blood`,
+        REQUEST_OPTS
+      )
+    })
+
+    let reagentResponse = []
+    await doIfCategoryMatches('reagent', async () => {
+      reagentResponse = await axios.post(
+        searchURL,
+        `${RVT}&searchText=reagent`,
+        REQUEST_OPTS
+      )
+    })
+
+    let oilResponse = []
+    await doIfCategoryMatches('oil', async () => {
+      oilResponse = await axios.post(
+        searchURL,
+        `${RVT}&searchText=oil+of`,
+        REQUEST_OPTS
+      )
+    })
+
+    let alchemyStoneResponse = []
+    await doIfCategoryMatches('alchemy stone', async () => {
+      alchemyStoneResponse = await axios.post(
+        searchURL,
+        `${RVT}&searchText=alchemy+stone`,
+        REQUEST_OPTS
+      )
+    })
+
+    let magicCrystalResponse = []
+    await doIfCategoryMatches('magic crystal', async () => {
+      magicCrystalResponse = await axios.post(
+        searchURL,
+        `${RVT}&searchText=magic+crystal`,
+        REQUEST_OPTS
+      )
+    })
+
+    if (
+      (!nonPotionSubCategory && !consumableResponse?.data) ||
+      (subcategory === 'blood' && !bloodResponse?.data) ||
+      (subcategory === 'oil' && !oilResponse?.data) ||
+      (subcategory === 'reagent' && !reagentResponse?.data) ||
+      (subcategory === 'black stone' && !blackStoneResponse?.data) ||
+      (subcategory === 'alchemy stone' && !alchemyStoneResponse?.data) ||
+      (subcategory === 'magic crystal' && !magicCrystalResponse?.data)
+    ) {
+      throw new Error(
+        'there was an issue communicating with the black desert api. check your token / cookie. (blood / oil / black stone / reagent / alchemy stone / magic crystal response invalid)'
+      )
+    }
+
+    const bloodData = []
+    if (bloodResponse?.data)
+      for (const blood of bloodResponse.data.list) {
+        const data = await getItemPriceInfo(blood.mainKey)
+        if (data.grade === 0) bloodData.push(data)
+      }
+
+    const reagentData = []
+    if (reagentResponse?.data)
+      for (const reagent of reagentResponse.data.list) {
+        const data = await getItemPriceInfo(reagent.mainKey)
+        reagentData.push(data)
+      }
+
+    const oilData = []
+    if (oilResponse?.data)
+      for (const oil of oilResponse.data.list) {
+        const data = await getItemPriceInfo(oil.mainKey)
+        if (data.grade === 0) oilData.push(data)
+      }
+
+    const intermediateConsumableData =
+      consumableResponse?.data?.marketList.filter(i => i.grade <= 1) || []
+    const intermediateBlackStoneData =
+      blackStoneResponse?.data?.marketList || []
+
+    const blackStoneData = []
+    for (const blackStone of intermediateBlackStoneData) {
+      const data = await getItemPriceInfo(blackStone.mainKey)
+      blackStoneData.push(data)
+    }
+
+    const consumableData = []
+    for (const consumable of intermediateConsumableData) {
+      const data = await getItemPriceInfo(consumable.mainKey)
+      consumableData.push(data)
+    }
+
+    const alchemyStoneData = []
+    if (alchemyStoneResponse?.data)
+      for (const alchemyStone of alchemyStoneResponse.data.list.filter(i =>
+        i.name.toLowerCase().includes('imperfect')
+      )) {
+        const data = await getItemPriceInfo(alchemyStone.mainKey)
+        alchemyStoneData.push(data)
+      }
+
+    const magicCrystalData = []
+    for (const magicCrystal of magicCrystalResponse.data.list) {
+      const data = await getItemPriceInfo(magicCrystal.mainKey)
+      magicCrystalData.push(data)
+    }
+
+    aggregateResponse = [
+      ...consumableData,
+      ...oilData,
+      ...bloodData,
+      ...reagentData,
+      ...alchemyStoneData,
+      ...blackStoneData,
+      ...magicCrystalData,
+    ]
+  } else {
+    const response = await axios.post(
+      url,
+      `${RVT}&mainCategory=${CONSUMABLE_CATEGORY}&subcategory=${CONSUMABLE_SUBCATEGORIES[subcategory]}`,
+      REQUEST_OPTS
+    )
+
+    const consumableData = response.data?.marketList
+
+    aggregateResponse = consumableData
+  }
 
   // descending - most expensive to least
-  const sortedData = data
-    .sort((a, b) => b.minPrice - a.minPrice)
-    .map(item => ({
-      ...item,
-      minPrice: formatNum(item.minPrice),
-      sumCount: formatNum(item.sumCount),
-    }))
+  const sortedData = aggregateResponse
+    .sort(
+      (a, b) => b?.minPrice || b?.pricePerOne - a?.minPrice || a?.pricePerOne
+    )
+    .map(item => {
+      return {
+        ...item,
+        minPrice: isNaN(item?.pricePerOne) ? item?.minPrice : item?.pricePerOne,
+        sumCount: isNaN(item?.sumCount) ? item?.count : item?.sumCount,
+      }
+    })
 
   const amount = BATCH_SIZE || sortedData.length
 
   console.log(
-    `\nI'll look for a maximum of ${chalk.cyan(amount)} consumable${
+    `\nI'll look for a maximum of ${chalk.cyan(amount)} item${
       amount === 0 || amount > 1 ? 's' : ''
     } in the ${chalk.cyan(subcategory)} subcategory!`
   )
@@ -82,118 +282,23 @@ export const getConsumableMarketData = async (subcategory = 'offensive') => {
   const itemDataList = await getItemCodexData(
     sortedData.slice(START, START + BATCH_SIZE || Infinity)
   )
-  const mappedRecipePrices = []
-  const outOfStockItems = []
 
-  console.log()
-
-  for (const itemWithRecipe of itemDataList) {
-    const { recipeList, item: itemName, price, id } = itemWithRecipe
-    const potentialRecipes = []
-
-    process.stdout.cursorTo(0)
-    process.stdout.clearLine()
-    process.stdout.write(
-      `  I'll ask a ${chalk.cyan(
-        'merchant'
-      )} about the price of ingredients for ${chalk.yellow(
-        `[${itemName.toLowerCase()}]`
-      )}!`
-    )
-
-    // find the cheapest recipe in a potion's recipe list
-    for (const recipe of recipeList) {
-      const potentialRecipe = []
-
-      for (const { quant, id } of recipe) {
-        const itemPriceInfo = await getItemPriceInfo(id)
-
-        if (!itemPriceInfo) continue
-        if (itemPriceInfo.count === 0 && Math.random() > 0.5)
-          outOfStockItems.push(itemPriceInfo.name.toLowerCase())
-
-        potentialRecipe.push({
-          ...itemPriceInfo,
-          quant,
-        })
-      }
-
-      if (potentialRecipe.length !== recipe.length) continue
-
-      potentialRecipes.push(potentialRecipe)
+  const recipePrices = await getAllRecipePrices(
+    itemDataList,
+    id => INGREDIENT_CACHE[id] || false,
+    (id, ingredient) => {
+      INGREDIENT_CACHE[id] = ingredient
     }
+  )
 
-    const mapper = item => item.pricePerOne * item.quant
-    const sum = (a, b) => a + b
+  const [mappedRecipePrices, outOfStockItems] = recipePrices
 
-    const recipeToSave = potentialRecipes
-      .sort((a, b) => {
-        const priceA = a.map(mapper).reduce(sum)
-        const priceB = b.map(mapper).reduce(sum)
+  const recipesWithItemsInStock = mappedRecipePrices.filter(r =>
+    r.recipe.items.every(i => i.stock > 0)
+  )
 
-        return priceA - priceB
-      })?.[0]
-      ?.map(item => {
-        const totalPrice = item.pricePerOne * item.quant
-
-        if (item.count === 0 && outOfStockItems.length === 0)
-          outOfStockItems.push(item.name.toLowerCase())
-
-        return {
-          ...item,
-          totalPrice,
-          stock: item.count,
-        }
-      })
-
-    if (!recipeToSave?.length) continue
-
-    const totalRecipePrice = recipeToSave.reduce((p, c) => p + c.totalPrice, 0)
-    const totalIngredientStock = recipeToSave.reduce((p, c) => p + c.count, 0)
-    const anyIngredientOut = recipeToSave.some(r => r.count === 0)
-    const profit = price.replaceAll(',', '') - totalRecipePrice
-
-    if (HIDE_UNPROFITABLE_RECIPES && profit < 0) continue
-    if (totalIngredientStock < 10 || anyIngredientOut) continue
-
-    const stockCount = recipeToSave
-      .map(
-        e =>
-          `    ${e.name.toLowerCase()}: ${chalk.yellow(
-            formatNum(e.count)
-          )} in stock`
-      )
-      .join('\n')
-
-    const information = `${chalk.yellow(
-      `  [${id}] [${itemName.toLowerCase()}]`
-    )}
-
-  market price of completed item: ${chalk.yellow(price)} silver
-  cost of ingredients on the market: ${chalk.yellow(
-    formatNum(totalRecipePrice)
-  )} silver
-  total ingredients in stock: ${chalk.yellow(formatNum(totalIngredientStock))}
-${stockCount}
-  total raw profit: ${
-    profit < 0 ? chalk.red(formatNum(profit)) : chalk.green(formatNum(profit))
-  } silver
-`
-
-    mappedRecipePrices.push({
-      itemName,
-      price,
-      id,
-      information,
-      profit,
-      recipe: {
-        items: recipeToSave,
-        totalPrice: totalRecipePrice,
-      },
-    })
-  }
-
-  const anyProfitsNegative = mappedRecipePrices.some(e => e.profit < 0)
+  const anyProfitsNegative = mappedRecipePrices.some(e => e.taxedProfit < 0)
+  const allProfitsNegative = mappedRecipePrices.every(e => e.taxedProfit < 0)
 
   process.stdout.cursorTo(0)
   process.stdout.clearLine()
@@ -201,9 +306,10 @@ ${stockCount}
     `  alright, I found all the latest ${chalk.yellow('price information')}!`
   )
 
-  // console.dir(mappedRecipePrices, { depth: null })
-
-  if (mappedRecipePrices.length === 0 || HIDE_UNPROFITABLE_RECIPES) {
+  if (
+    recipesWithItemsInStock.length === 0 ||
+    (HIDE_UNPROFITABLE_RECIPES && allProfitsNegative)
+  ) {
     const finalOutOfStockItems = [...new Set(outOfStockItems)]
 
     console.log(
@@ -211,65 +317,31 @@ ${stockCount}
         'gathering together! ♫'
       )}\n`
     )
-    console.log(
-      `maybe we'll find some ${chalk.yellow(`[${finalOutOfStockItems[0]}]`)}${
-        finalOutOfStockItems[1]
-          ? ` or ${chalk.yellow(`[${finalOutOfStockItems[1]}]!`)}`
-          : '!'
-      }`
-    )
+    if (finalOutOfStockItems.length > 0)
+      console.log(
+        `maybe we'll find some ${chalk.yellow(`[${finalOutOfStockItems[0]}]`)}${
+          finalOutOfStockItems[1]
+            ? ` or ${chalk.yellow(`[${finalOutOfStockItems[1]}]!`)}`
+            : '!'
+        }`
+      )
     console.log()
   } else {
     console.log(
-      `\nlooks like it's time to make some ${chalk.yellow(
-        'potions!'
+      `\nlooks like it's time to do some ${chalk.yellow(
+        'alchemy!'
       )} let's pick one!`
     )
 
     if (anyProfitsNegative) {
       console.log(
-        `\n♫ even if we don't make much money, it's still fun to do this ${chalk.yellow(
-          'together~'
-        )}`
+        "\n♫ even if we don't make much money, it's still fun to do this together~"
       )
     }
 
     console.log()
-    console.log(mappedRecipePrices.map(e => e.information).join('\n'))
+    console.log(recipesWithItemsInStock.map(e => e.information).join('\n'))
   }
 
   return
-}
-
-export const getItemPriceInfo = async itemId => {
-  if (isNaN(itemId)) {
-    throw new TypeError('must supply a numerical item id.')
-  }
-
-  const url = `${ROOT_URL}${MARKET_SUB_LIST}`
-
-  const response = await axios.post(
-    url,
-    // usingCleint [sic] - watch out for this if pearl abyss fixes the typo
-    `${RVT}&mainKey=${itemId}&usingCleint=0`,
-    {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        Cookie: COOKIE,
-      },
-    }
-  )
-
-  if (!response || !response?.data) {
-    throw new Error(
-      'there was an issue communicating with the black desert api. check your token / cookie.'
-    )
-  }
-
-  const priceList = response.data.detailList
-
-  return priceList[0]
 }

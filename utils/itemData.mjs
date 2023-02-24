@@ -2,47 +2,16 @@ import puppeteer from 'puppeteer'
 import axios from 'axios'
 import chalk from 'chalk'
 import fs from 'fs'
+import env from './../env.mjs'
 
+const { PUPPETEER_ARGS } = env
 const ROOT_URL = 'https://bdocodex.com/us/item/'
+const ROOT_MATGROUP_URL = 'https://bdocodex.com/us/materialgroup/'
 
-const minimalPuppeteerArgs = [
-  '--autoplay-policy=user-gesture-required',
-  '--disable-background-networking',
-  '--disable-background-timer-throttling',
-  '--disable-backgrounding-occluded-windows',
-  '--disable-breakpad',
-  '--disable-client-side-phishing-detection',
-  '--disable-component-update',
-  '--disable-default-apps',
-  '--disable-dev-shm-usage',
-  '--disable-domain-reliability',
-  '--disable-extensions',
-  '--disable-features=AudioServiceOutOfProcess',
-  '--disable-hang-monitor',
-  '--disable-ipc-flooding-protection',
-  '--disable-notifications',
-  '--disable-offer-store-unmasked-wallet-cards',
-  '--disable-popup-blocking',
-  '--disable-print-preview',
-  '--disable-prompt-on-repost',
-  '--disable-renderer-backgrounding',
-  '--disable-setuid-sandbox',
-  '--disable-speech-api',
-  '--disable-sync',
-  '--hide-scrollbars',
-  '--ignore-gpu-blacklist',
-  '--metrics-recording-only',
-  '--mute-audio',
-  '--no-default-browser-check',
-  '--no-first-run',
-  '--no-pings',
-  '--no-sandbox',
-  '--no-zygote',
-  '--password-store=basic',
-  '--use-gl=swiftshader',
-  '--use-mock-keychain',
-  '--fast-start',
-]
+const MATGROUP_ITEM_CACHE = {}
+
+const updateMgItemCache = (id, item) => (MATGROUP_ITEM_CACHE[id] = item)
+const getCachedMgItem = id => MATGROUP_ITEM_CACHE?.[id]
 
 export const getItemCodexData = async itemIdList => {
   const stream = fs.createWriteStream('./error.log', { flags: 'a' })
@@ -55,7 +24,7 @@ export const getItemCodexData = async itemIdList => {
 
   const browser = await puppeteer.launch({
     headless: true,
-    args: minimalPuppeteerArgs,
+    args: PUPPETEER_ARGS,
     ignoreHTTPSErrors: true,
     userDataDir: './puppeteer_cache',
   })
@@ -76,7 +45,14 @@ export const getItemCodexData = async itemIdList => {
 
   console.log()
 
-  for (const { mainKey: itemId, name, minPrice } of itemIdList) {
+  for (const {
+    mainKey: itemId,
+    name,
+    minPrice,
+    totalTradeCount,
+    count,
+    sumCount,
+  } of itemIdList) {
     if (!itemId || isNaN(itemId))
       throw new TypeError('itemId must be a number.')
 
@@ -87,6 +63,15 @@ export const getItemCodexData = async itemIdList => {
       if (!pageString.data.includes('ProductRecipeTable')) continue
 
       const page = await browser.newPage()
+      await page.setRequestInterception(true)
+
+      page.on('request', request =>
+        /image|stylesheet|font/.test(request.resourceType()) &&
+        !request.isInterceptResolutionHandled()
+          ? request.respond({ status: 200, body: 'aborted' })
+          : request.continue()
+      )
+
       await page.goto(url)
 
       process.stdout.cursorTo(0)
@@ -101,7 +86,7 @@ export const getItemCodexData = async itemIdList => {
       try {
         element = await page.waitForSelector(
           '#MProductRecipeTable, #ProductRecipeTable',
-          { timeout: 10_000 }
+          { timeout: 5000 }
         )
       } catch {
         console.log(`skipped [${itemId}] ${name}`)
@@ -110,15 +95,64 @@ export const getItemCodexData = async itemIdList => {
 
       if (!element) continue // I'm superstitious
 
-      const allRecipesForPotion = await element.evaluate(el =>
-        // hmm...surely this very specific combination of selectors
-        // will never change, breaking the entire application...
+      const materialGroupReferences = await element.evaluate(el =>
         [...el.querySelectorAll('.dt-level + .dt-reward:has(a)')].map(e =>
-          [...e.querySelectorAll('a')].map(a => ({
-            quant: +a.querySelector('.quantity_small').textContent,
-            id: +a.href.split('/').filter(Boolean).at(-1),
-          }))
+          [...e.querySelectorAll('a')]
+            .filter(a => a.href.includes('materialgroup'))
+            .map(a => +a.href.split('/').filter(Boolean).at(-1))
         )
+      )
+
+      const mgPage = await browser.newPage()
+      await mgPage.setRequestInterception(true)
+
+      mgPage.on('request', request =>
+        /image|stylesheet|font/.test(request.resourceType()) &&
+        !request.isInterceptResolutionHandled()
+          ? request.respond({ status: 200, body: 'aborted' })
+          : request.continue()
+      )
+
+      for (const matGroup of materialGroupReferences.flat(Infinity)) {
+        let mgItemElement
+
+        if (getCachedMgItem(matGroup)) continue
+
+        await mgPage.goto(`${ROOT_MATGROUP_URL}${matGroup}`)
+
+        try {
+          mgItemElement = await mgPage.waitForSelector('.card-body td a', {
+            timeout: 5000,
+          })
+        } catch {
+          console.log(`skipped [${itemId}] ${name}`)
+          continue
+        }
+
+        const matGroupItem = await mgItemElement.evaluate(
+          a => +a.href.split('/').filter(Boolean).at(-1)
+        )
+
+        updateMgItemCache(matGroup, matGroupItem)
+      }
+
+      await mgPage.close()
+
+      const allRecipesForPotion = await element.evaluate(
+        (el, mgItemList) =>
+          // hmm...surely this very specific combination of selectors
+          // will never change, breaking the entire application...
+          [...el.querySelectorAll('.dt-level + .dt-reward:has(a)')].map(e =>
+            [...e.querySelectorAll('a')]
+              .map(a => ({
+                quant: +a.querySelector('.quantity_small').textContent,
+                id: a.href.includes('materialgroup')
+                  ? mgItemList?.[+a.href.split('/').filter(Boolean).at(-1)]
+                  : +a.href.split('/').filter(Boolean).at(-1),
+              }))
+              .filter(i => !!i.id)
+          ),
+        MATGROUP_ITEM_CACHE
       )
 
       recipes.push({
@@ -126,6 +160,12 @@ export const getItemCodexData = async itemIdList => {
         recipeList: allRecipesForPotion,
         price: minPrice,
         id: itemId,
+        totalTradeCount: isNaN(totalTradeCount)
+          ? 'not available'
+          : totalTradeCount,
+        totalInStock: isNaN(+count || +sumCount)
+          ? 'not available'
+          : +count || +sumCount,
       })
 
       await page.close()
@@ -148,6 +188,7 @@ the bdocodex parser thing has broken. output:
   }
 
   await browser.close()
+  killBrowser()
   stream.end()
 
   process.stdout.cursorTo(0)

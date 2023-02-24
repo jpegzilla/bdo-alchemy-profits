@@ -3,7 +3,19 @@ import chalk from 'chalk'
 
 import { getConsumableMarketData } from './utils/index.mjs'
 
-const options = ['offensive', 'defensive', 'functional', 'potion']
+const options = [
+  'offensive',
+  'defensive',
+  'functional',
+  'potion',
+  'blood',
+  'oil',
+  'alchemy stone',
+  'reagent',
+  'black stone',
+  'magic crystal',
+  'all',
+]
 
 console.log(
   `\n♫ hello! oh? you want to sell ${chalk.yellow(
@@ -11,7 +23,8 @@ console.log(
   )} today? that sounds like fun!`
 )
 console.log(`\n♫ let's practice ${chalk.yellow('alchemy')} together~!`)
-console.log('\n♫ offensive, defensive, functional, potion...')
+console.log('\n♫ offensive, defensive, or maybe all at once...?')
+
 const index = readline.keyInSelect(
   options,
   'which category shall we try to make today?'
@@ -37,13 +50,12 @@ if (!options.includes(subcategory)) {
 }
 
 console.log(
-  `\n♫ let's see if ${chalk.cyan(
-    subcategory
-  )} consumables are profitable today~ ♫`
+  `\n♫ let's see if ${chalk.cyan(subcategory)} items are profitable today~ ♫`
 )
 
 const main = async () => {
-  await getConsumableMarketData(subcategory)
+  if (subcategory === 'all') await getConsumableMarketData(subcategory, true)
+  else await getConsumableMarketData(subcategory)
   process.exit()
 }
 
