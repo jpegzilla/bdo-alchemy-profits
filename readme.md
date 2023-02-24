@@ -6,7 +6,7 @@ this is a tool that searches the central market for potions and other items that
 
 of course, there are usually none of these! sometimes there are a few, but they're typically very low volume, limiting total profits. BUT, if there are any, this tool will find them!
 
-this doesn't take into account market tax or anything like that. it just shows raw profits based on market price of the potion versus market price of the ingredients.
+this takes into account market tax and shows the gross potential profit as well as the taxed profit - but it currently assumes you have the value pack and that your fame is level 1 (family fame >= 1000).
 
 finally, if you really want to make profit on the market, you basically have to go out and gather super rare ingredients yourself. good  luck!
 
@@ -14,11 +14,12 @@ finally, if you really want to make profit on the market, you basically have to 
 
 if you have node.js installed on your computer, you can use the source code.
 
-1.  clone this repo
-2.  install yarn (`npm i -g yarn`)
-3.  install dependencies (`yarn`)
-4.  run the script (`yarn start`)
-5.  pick a category to search in and wait! it may take a while, as the script scrapes bdocodex.com for recipe information.
+1.  `git clone git@github.com:jpegzilla/bdo-alchemy-profits.git`
+1.  cd into `bdo-alchemy-profits`
+1.  install yarn (`npm i -g yarn`)
+1.  install dependencies (`yarn`)
+1.  run the script (`yarn start`)
+1.  pick a category to search in and wait! it may take a while, as the script scrapes bdocodex.com for recipe information.
 
 ![the script options selection](./screenshots/example_two.png)
 
