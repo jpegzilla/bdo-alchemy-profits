@@ -26,7 +26,7 @@ I'm trying to package this up into an executable, but it's making me regret even
 todo:
 
 -   [ ] cache ingredient prices
--   [ ] add option to search for all possible alchemy consumables
--   [ ] account for market tax
--   [ ] warn about low daily volume for ingredients and consumables
+-   [x] add option to search for all possible alchemy consumables
+-   [x] account for market tax
+-   [x] warn about low daily volume for ingredients and consumables
 -   [ ] add a `--silent` or `--minimal` option to just show bare output
