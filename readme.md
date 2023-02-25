@@ -8,20 +8,24 @@ of course, there are usually none of these! sometimes there are a few, but they'
 
 this takes into account market tax and shows the gross potential profit as well as the taxed profit - but it currently assumes you have the value pack and that your fame is level 1 (family fame >= 1000).
 
-it will also tell you the maximum possible amount of items you can craft (by buying all the available ingredients).
+it will also tell you the maximum possible amount of items you can craft (by buying all the available ingredients). if an npc sells the item you need, that will be listed as well.
 
-finally, if you really want to make profit on the market, you basically have to go out and gather super rare ingredients yourself. good  luck!
+![an example listing some ingredients sold by npcs.](./screenshots/example_three.png)
+
+finally, if you really want to make profit on the market, you basically have to go out and gather super rare ingredients yourself. if you can sap all fifteen thornwood trees on the map or pick all three truffle mushrooms, you'll be rolling in cash! and if you _really_ wanna make the big bucks, head to tunkuta! I'm sure you'll have no trouble at all crafting those 10+ million silver potions if you get some turo blood and hearts...although it seems like 99% of turos must be heartless, bloodless vampires or something... ;P
+
+good luck!
 
 ## how to use
 
-if you have node.js installed on your computer, you can use the source code.
+if you have [node.js](https://nodejs.org/) installed on your computer, you can use the source code.
 
 1.  `git clone git@github.com:jpegzilla/bdo-alchemy-profits.git`
-1.  cd into `bdo-alchemy-profits`
-1.  install yarn (`npm i -g yarn`)
+1.  `cd bdo-alchemy-profits`
+1.  install [yarn](https://yarnpkg.com/) (`npm i -g yarn`)
 1.  install dependencies (`yarn`)
 1.  run the script (`yarn start`)
-1.  pick a category to search in and wait! it may take a while, as the script scrapes bdocodex.com for recipe information.
+1.  pick a category to search in and wait! it may take a while, as the script scrapes [bdocodex.com](https://bdocodex.com/us/) for recipe information.
 
 ![the script options selection](./screenshots/example_two.png)
 
@@ -42,3 +46,6 @@ I'm trying to package this up into an executable, but it's making me regret even
 -   [x] make it work
 -   [ ] make the code prettier
 -   [ ] make it fast
+-   [ ] detect optimal matgroup item to use (i.e. purified water is easier to obtain than distilled water, but they're in the same matgroup)
+-   [ ] make executable that ships with external chromium (for puppeteer)
+-   [ ] add support for non na / eu regions
