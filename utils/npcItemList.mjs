@@ -5,6 +5,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 20,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'cooking',
   },
   9001: {
     name: 'Salt',
@@ -12,6 +13,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 20,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'cooking',
   },
   6656: {
     name: 'Purified Water',
@@ -19,6 +21,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 5000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'desert goods',
   },
   8041: {
     name: 'Old Moon Solvent',
@@ -26,6 +29,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 100000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'old moon',
   },
   4986: {
     name: "Ibellab's Essence",
@@ -33,6 +37,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 10000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'old moon',
   },
   4916: {
     name: 'Blue Reagent',
@@ -40,6 +45,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 50000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'material',
   },
   45162: {
     name: 'Old Moon Alchemy Catalyst',
@@ -47,6 +53,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 3500000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'old moon',
   },
   4914: {
     name: "Aal's Tear",
@@ -54,6 +61,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 21000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'old moon',
   },
   5408: {
     name: 'Arrow Mushroom',
@@ -61,6 +69,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 1000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5410: {
     name: 'Cloud Mushroom',
@@ -68,6 +77,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 1000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5409: {
     name: 'Dwarf Mushroom',
@@ -75,6 +85,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 950,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5413: {
     name: 'Emperor Mushroom',
@@ -82,6 +93,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 900,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5407: {
     name: 'Fortune Teller Mushroom',
@@ -89,6 +101,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 900,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5414: {
     name: 'Ghost Mushroom',
@@ -96,6 +109,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 1000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5411: {
     name: 'Sky Mushroom',
@@ -103,6 +117,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 950,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5412: {
     name: 'Tiger Mushroom',
@@ -110,6 +125,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 950,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'mushroom vendor',
   },
   5404: {
     name: 'Dry Mane Grass',
@@ -117,6 +133,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 525,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'herb vendor',
   },
   5403: {
     name: 'Fire Flake Flower',
@@ -124,6 +141,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 550,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'herb vendor',
   },
   5405: {
     name: 'Silk Honey Grass',
@@ -131,6 +149,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 500,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'herb vendor',
   },
   5402: {
     name: 'Silver Azalea',
@@ -138,6 +157,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 575,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'herb vendor',
   },
   5401: {
     name: 'Sunrise Herb',
@@ -145,6 +165,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 500,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'herb vendor',
   },
   15009: {
     name: 'Magic Crystal of Abundance - Healing',
@@ -152,6 +173,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 30000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'jeweler',
   },
   15001: {
     name: 'Magic Crystal of Flame - Precision',
@@ -159,6 +181,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 30000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'jeweler',
   },
   15020: {
     name: 'Magic Crystal of Enchantment - Agility',
@@ -166,6 +189,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 30000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'jeweler',
   },
   15019: {
     name: 'Magic Crystal of Enchantment - Vision',
@@ -173,6 +197,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 30000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'jeweler',
   },
   15013: {
     name: 'Magic Crystal of Nature - Ascension',
@@ -180,6 +205,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 30000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'jeweler',
   },
   4915: {
     name: 'Manos Stone',
@@ -187,6 +213,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 5000000,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'jeweler',
   },
   4903: {
     name: 'Empty Crystal',
@@ -194,6 +221,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 2500,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   517: {
     name: 'HP Potion (Small)',
@@ -201,6 +229,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 80,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   521: {
     name: 'HP Potion (Medium)',
@@ -208,6 +237,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 200,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   519: {
     name: 'HP Potion (Large)',
@@ -215,6 +245,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 500,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   519: {
     name: 'HP Potion (Extra Large)',
@@ -222,6 +253,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 1250,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   520: {
     name: 'MP Potion (Small)',
@@ -229,6 +261,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 80,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   521: {
     name: 'MP Potion (Medium)',
@@ -236,6 +269,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 200,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   522: {
     name: 'MP Potion (Large)',
@@ -243,6 +277,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 500,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
   526: {
     name: 'MP Potion (Extra Large)',
@@ -250,5 +285,6 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 1250,
     count: Infinity,
     isNPCItem: true,
+    npcType: 'general goods',
   },
 }

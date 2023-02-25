@@ -14,6 +14,7 @@ const {
   WORLD_MARKET_LIST,
   MARKET_SEARCH_LIST,
   REQUEST_OPTS,
+  HIDE_OUT_OF_STOCK,
 } = env
 
 if (!RVT || !COOKIE) {
@@ -232,10 +233,11 @@ export const getConsumableMarketData = async (
       }
 
     const magicCrystalData = []
-    for (const magicCrystal of magicCrystalResponse.data.list) {
-      const data = await getItemPriceInfo(magicCrystal.mainKey)
-      magicCrystalData.push(data)
-    }
+    if (magicCrystalResponse?.data)
+      for (const magicCrystal of magicCrystalResponse.data.list) {
+        const data = await getItemPriceInfo(magicCrystal.mainKey)
+        magicCrystalData.push(data)
+      }
 
     aggregateResponse = [
       ...consumableData,
@@ -293,8 +295,8 @@ export const getConsumableMarketData = async (
 
   const [mappedRecipePrices, outOfStockItems] = recipePrices
 
-  const recipesWithItemsInStock = mappedRecipePrices.filter(r =>
-    r.recipe.items.every(i => i.stock > 0)
+  const recipesToShow = mappedRecipePrices.filter(r =>
+    r.recipe.items.every(i => (HIDE_OUT_OF_STOCK ? i.stock > 0 : true))
   )
 
   const anyProfitsNegative = mappedRecipePrices.some(e => e.taxedProfit < 0)
@@ -307,7 +309,7 @@ export const getConsumableMarketData = async (
   )
 
   if (
-    recipesWithItemsInStock.length === 0 ||
+    (HIDE_OUT_OF_STOCK && recipesToShow.length === 0) ||
     (HIDE_UNPROFITABLE_RECIPES && allProfitsNegative)
   ) {
     const finalOutOfStockItems = [...new Set(outOfStockItems)]
@@ -340,7 +342,7 @@ export const getConsumableMarketData = async (
     }
 
     console.log()
-    console.log(recipesWithItemsInStock.map(e => e.information).join('\n'))
+    console.log(recipesToShow.map(e => e.information).join('\n'))
   }
 
   return

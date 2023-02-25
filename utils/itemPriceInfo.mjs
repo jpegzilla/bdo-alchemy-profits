@@ -12,21 +12,22 @@ const {
   HIDE_UNPROFITABLE_RECIPES,
   REQUEST_OPTS,
   MARKET_SELL_BUY_INFO,
+  HIDE_OUT_OF_STOCK,
 } = env
+
+const formatNum = num =>
+  isNaN(num) ? false : Intl.NumberFormat('en-US').format(num)
 
 const calculateTaxedProfit = (profit, valuePack = true, fameLevel = 1) => {
   // TODO: this calculation is wrong if profit is negative
   // which I guess doesn't really matter but still I'll fix it
   const fameLevels = [1, 1.005, 1.01, 1.015]
   const profitMinusTax = profit - profit * 0.65
-
-  return Math.floor(
+  const outputProfit =
     profitMinusTax * (valuePack ? 1.3 : 1) * fameLevels[fameLevel]
-  )
-}
 
-const formatNum = num =>
-  isNaN(num) ? false : Intl.NumberFormat('en-US').format(num)
+  return Math.floor(outputProfit)
+}
 
 export const getItemPriceInfo = async (itemId, isRecipeIngredient = false) => {
   if (isNaN(itemId)) {
@@ -37,13 +38,33 @@ export const getItemPriceInfo = async (itemId, isRecipeIngredient = false) => {
 
   const url = `${ROOT_URL}${MARKET_SUB_LIST}`
   const sellBuyUrl = `${ROOT_URL}${MARKET_SELL_BUY_INFO}`
+  let response
 
-  const response = await axios.post(
-    url,
-    // usingCleint [sic] - watch out for this if pearl abyss fixes the typo
-    `${RVT}&mainKey=${itemId}&usingCleint=0`,
-    REQUEST_OPTS
-  )
+  try {
+    response = await axios.post(
+      url,
+      // usingCleint [sic] - watch out for this if pearl abyss fixes the typo
+      `${RVT}&mainKey=${itemId}&usingCleint=0`,
+      REQUEST_OPTS
+    )
+  } catch (e) {
+    console.log(
+      chalk.red(
+        "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla (that's me!)\n"
+      )
+    )
+
+    stream.write(
+      `=================== ERROR ===================
+[${url}] ${itemId} (${new Date().toISOString()})
+getItemPriceInfo broke, the market api may have changed. output:
+    ${JSON.stringify(e, null, 3)}
+
+    `
+    )
+
+    return false
+  }
 
   if (!response?.data) {
     throw new Error(
@@ -209,40 +230,93 @@ export const getAllRecipePrices = async (
 
       const anyIngredientOut = recipeToSave
         .filter(r => !r?.isNPCItem)
-        .some(r => r.count === 0)
+        .some(r => r.count === 0 || r.count < r.quant)
       const profit = price - totalRecipePrice
 
       if (HIDE_UNPROFITABLE_RECIPES && profit < 0) continue
-      if (totalIngredientStock < 10 || anyIngredientOut) continue
+      if (HIDE_OUT_OF_STOCK && (totalIngredientStock < 10 || anyIngredientOut))
+        continue
+
+      const maxPotionCount = recipeToSave
+        .map(e => {
+          return e.stock === Infinity ? Infinity : ~~(e.stock / e.quant)
+        })
+        .sort((a, b) => a - b)[0]
 
       const stockCount = recipeToSave
-        .map(
-          e =>
-            `(${e.quant}) ${e.name.toLowerCase()}: ${chalk.yellow(
-              formatNum(e.count)
-            )} in stock (${
-              formatNum(e?.pricePerOne) || formatNum(e?.minPrice) || 'unknown'
-            } silver) npc? ${e?.isNPCItem ? 'yes' : 'no'}`
-        )
+        .map(e => {
+          const maxPotionAmount =
+            maxPotionCount === Infinity
+              ? Infinity
+              : Math.min(
+                  ~~(e.quant * maxPotionCount),
+                  e.stock === Infinity
+                    ? e.quant * maxPotionCount
+                    : ~~(e.stock / e.quant)
+                )
+
+          const price = e?.minPrice || e?.pricePerOne || 'unknown'
+          const formattedPrice = chalk.yellow(formatNum(price))
+          const formattedMaxPrice = chalk.yellow(
+            formatNum(maxPotionAmount * price)
+          )
+          const formattedPotionAmount = chalk.yellow(formatNum(e.quant))
+          const formattedMaxPotionAmount = chalk.yellow(
+            formatNum(maxPotionAmount)
+          )
+          const formattedStockCount = chalk.yellow(formatNum(e.count))
+
+          const formattedNPCInformation = e?.isNPCItem
+            ? chalk.yellow(` (sold by ${e.npcType} npcs)`)
+            : ''
+
+          return `${formattedPotionAmount} [max: ${formattedMaxPotionAmount}] ${chalk.yellow(
+            `${e.name.toLowerCase()}: ${formattedStockCount}`
+          )} in stock${formattedNPCInformation}. price: ${formattedPrice} [max: ${formattedMaxPrice}] silver`
+        })
         .join('\n\t')
 
-      const information = `${chalk.yellow(
-        `  [${id}] [${itemName.toLowerCase()}]`
+      const information = `    ${chalk.yellow(
+        `[${id}] [${itemName.toLowerCase()}]`
       )}
 
     market price of completed item: ${chalk.yellow(formatNum(price))} silver
     market stock of completed item: ${chalk.yellow(formatNum(totalInStock))}
-    total trades of completed item: ${chalk.yellow(formatNum(totalTradeCount))}
+    ${
+      totalTradeCount
+        ? `total trades of completed item: ${chalk.yellow(
+            formatNum(totalTradeCount)
+          )}`
+        : ''
+    }
+    max amount you can create: ${chalk.yellow(formatNum(maxPotionCount))}
     cost of ingredients: ${chalk.yellow(formatNum(totalRecipePrice))} silver
+    total max cost of ingredients: ${chalk.yellow(
+      formatNum(totalRecipePrice * maxPotionCount)
+    )} silver
     total ingredients in stock: ${chalk.yellow(formatNum(totalIngredientStock))}
 \t${stockCount}
     total raw profit: ${
-      profit < 0 ? chalk.red(formatNum(profit)) : chalk.green(formatNum(profit))
+      profit < 0
+        ? `${chalk.red(formatNum(profit))} [max: ${chalk.red(
+            formatNum(~~(profit * maxPotionCount))
+          )}]`
+        : `${chalk.green(formatNum(profit))} [max: ${chalk.green(
+            formatNum(~~(profit * maxPotionCount))
+          )}]`
     } silver
     total taxed profit: ${
-      calculateTaxedProfit(profit) < 0
-        ? chalk.red(formatNum(calculateTaxedProfit(profit)))
-        : chalk.green(formatNum(calculateTaxedProfit(profit)))
+      ~~calculateTaxedProfit(profit) <= 0
+        ? `${chalk.red(
+            formatNum(~~calculateTaxedProfit(profit))
+          )} [max: ${chalk.red(
+            formatNum(~~(calculateTaxedProfit(profit) * maxPotionCount))
+          )}]`
+        : `${chalk.green(
+            formatNum(~~calculateTaxedProfit(profit))
+          )} [max: ${chalk.green(
+            formatNum(~~(calculateTaxedProfit(profit) * maxPotionCount))
+          )}]`
     } silver
   `
 
@@ -269,7 +343,7 @@ export const getAllRecipePrices = async (
     stream.write(
       `=================== ERROR ===================
 [${url}] ${itemId}, ${name} (${new Date().toISOString()})
-getAllRecipePrices broke, the market api may have changed. output:
+getItemPriceInfo broke, the market api may have changed. output:
     ${JSON.stringify(e, null, 3)}
 
     `
@@ -278,5 +352,8 @@ getAllRecipePrices broke, the market api may have changed. output:
 
   stream.end()
 
-  return [mappedRecipePrices, outOfStockItems]
+  return [
+    mappedRecipePrices.sort((a, b) => a.profit - b.profit),
+    outOfStockItems,
+  ]
 }

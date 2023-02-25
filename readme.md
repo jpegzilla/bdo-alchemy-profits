@@ -8,6 +8,8 @@ of course, there are usually none of these! sometimes there are a few, but they'
 
 this takes into account market tax and shows the gross potential profit as well as the taxed profit - but it currently assumes you have the value pack and that your fame is level 1 (family fame >= 1000).
 
+it will also tell you the maximum possible amount of items you can craft (by buying all the available ingredients).
+
 finally, if you really want to make profit on the market, you basically have to go out and gather super rare ingredients yourself. good  luck!
 
 ## how to use
@@ -23,17 +25,20 @@ if you have node.js installed on your computer, you can use the source code.
 
 ![the script options selection](./screenshots/example_two.png)
 
-### standalone executable
+## standalone executable
 
 work in progress.
 
 I'm trying to package this up into an executable, but it's making me regret even writing this in javascript. HELP. I have tried `pkg`, `nexe`, `babel` + `ncc` + `pkg`, `warp`, `babel` + `nexe`, and a few other things I can't even remember. I have no clue what to do.
 
-todo:
+## todo:
 
--   [ ] cache ingredient prices
+-   [x] cache ingredient prices
 -   [x] add option to search for all possible alchemy consumables
 -   [x] account for market tax
 -   [x] warn about low daily volume for ingredients and consumables
 -   [ ] add a `--silent` or `--minimal` option to just show bare output
 -   [ ] **critical:** figure out how to get recipe information without scraping bdocodex. this would speed up the script by a huge amount.
+-   [x] make it work
+-   [ ] make the code prettier
+-   [ ] make it fast
