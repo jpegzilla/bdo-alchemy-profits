@@ -326,6 +326,7 @@ export const getAllRecipePrices = async (
         id,
         information,
         profit,
+        maxTaxedProfit: ~~(calculateTaxedProfit(profit) * maxPotionCount),
         taxedProfit: calculateTaxedProfit(profit),
         recipe: {
           items: recipeToSave,
@@ -353,7 +354,7 @@ getItemPriceInfo broke, the market api may have changed. output:
   stream.end()
 
   return [
-    mappedRecipePrices.sort((a, b) => a.profit - b.profit),
+    mappedRecipePrices.sort((a, b) => a.maxTaxedProfit - b.maxTaxedProfit),
     outOfStockItems,
   ]
 }
