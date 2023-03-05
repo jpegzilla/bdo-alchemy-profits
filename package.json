@@ -23,7 +23,8 @@
     "start": "NODE_NO_WARNINGS=1 node main.mjs",
     "dev": "nodemon main.js",
     "compilemorelikecumpile": "ncc build main.mjs -o ./dist/ncc",
-    "start:ncc": "node dist/ncc/index.mjs"
+    "start:ncc": "node dist/ncc/index.mjs",
+    "package": "pkg --target node16-win-x64 -o ./dist/bin/bdo-ap.exe ./dist/ncc/index.mjs"
   },
   "dependencies": {
     "axios": "0.27.2",
