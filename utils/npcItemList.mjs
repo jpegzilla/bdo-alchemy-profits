@@ -45,7 +45,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 50000,
     count: Infinity,
     isNPCItem: true,
-    npcType: 'material',
+    npcType: 'material vendor',
   },
   45162: {
     name: 'Old Moon Alchemy Catalyst',
@@ -61,7 +61,7 @@ export const NPC_ITEM_INDEX = {
     pricePerOne: 21000,
     count: Infinity,
     isNPCItem: true,
-    npcType: 'old moon',
+    npcType: 'material vendor',
   },
   5408: {
     name: 'Arrow Mushroom',
