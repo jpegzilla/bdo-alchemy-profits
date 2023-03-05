@@ -13,6 +13,23 @@ const MATGROUP_ITEM_CACHE = {}
 const updateMgItemCache = (id, item) => (MATGROUP_ITEM_CACHE[id] = item)
 const getCachedMgItem = id => MATGROUP_ITEM_CACHE?.[id]
 
+// https://stackoverflow.com/a/65424198
+const retryWrapper = (axios, { maxRetries }) => {
+  let counter = 0
+
+  axios.interceptors.response.use(null, ({ config }) => {
+    if (counter < maxRetries) {
+      counter++
+
+      return new Promise(resolve => {
+        resolve(axios(config))
+      })
+    }
+
+    return Promise.reject(error)
+  })
+}
+
 export const getItemCodexData = async itemIdList => {
   const stream = fs.createWriteStream('./error.log', { flags: 'a' })
 
@@ -27,6 +44,7 @@ export const getItemCodexData = async itemIdList => {
     args: PUPPETEER_ARGS,
     ignoreHTTPSErrors: true,
     userDataDir: './puppeteer_cache',
+    executablePath: './chrome_bin/win/chrome.exe',
   })
 
   const killBrowser = () => {
@@ -59,18 +77,26 @@ export const getItemCodexData = async itemIdList => {
     const url = `${ROOT_URL}${itemId}`
 
     try {
+      retryWrapper(axios, { maxRetries: 3 })
       const pageString = await axios.get(url)
       if (!pageString.data.includes('ProductRecipeTable')) continue
 
       const page = await browser.newPage()
       await page.setRequestInterception(true)
 
-      page.on('request', request =>
-        /image|stylesheet|font/.test(request.resourceType()) &&
-        !request.isInterceptResolutionHandled()
-          ? request.respond({ status: 200, body: 'aborted' })
-          : request.continue()
-      )
+      page.on('request', request => {
+        if (
+          (/twitch|doubleclick|track1|googlesyndication|rubicon|track1|analytics|aniview/.test(
+            request.url()
+          ) ||
+            /image|stylesheet|font|video|webp|svg|ping/.test(
+              request.resourceType()
+            )) &&
+          !request.isInterceptResolutionHandled()
+        ) {
+          request.respond({ status: 200, body: 'aborted' })
+        } else request.continue()
+      })
 
       await page.goto(url)
 

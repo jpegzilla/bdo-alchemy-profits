@@ -40,19 +40,23 @@ if (index === -1) {
   )
 }
 
-if (!options.includes(subcategory)) {
+if (!options.includes(subcategory) && subcategory !== 0) {
   console.log(
     "\nI don't know that category! I only know about offensive, defensive, functional, and potion consumables. try one of those categories!\n"
   )
 }
 
-console.log(
-  `\n♫ let's see if ${chalk.cyan(subcategory)} items are profitable today~ ♫`
-)
-
 const main = async () => {
-  if (subcategory === 'all') await getConsumableMarketData(subcategory, true)
-  else await getConsumableMarketData(subcategory)
+  if (options.includes(subcategory)) {
+    console.log(
+      `\n♫ let's see if ${chalk.cyan(
+        subcategory
+      )} items are profitable today~ ♫`
+    )
+
+    if (subcategory === 'all') await getConsumableMarketData(subcategory, true)
+    else await getConsumableMarketData(subcategory)
+  }
 }
 
 main()

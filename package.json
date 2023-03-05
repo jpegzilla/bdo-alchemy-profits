@@ -22,7 +22,8 @@
     "format": "prettier --write .",
     "start": "NODE_NO_WARNINGS=1 node main.mjs",
     "dev": "nodemon main.js",
-    "compilemorelikecumpile": "ncc build main.mjs -o ./dist/ncc"
+    "compilemorelikecumpile": "ncc build main.mjs -o ./dist/ncc",
+    "start:ncc": "node dist/ncc/index.mjs"
   },
   "dependencies": {
     "axios": "0.27.2",
