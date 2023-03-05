@@ -31,9 +31,9 @@ if you have [node.js](https://nodejs.org/) installed on your computer, you can u
 
 ## standalone executable
 
-work in progress.
+standalone executables are available on the [releases page](https://github.com/jpegzilla/bdo-alchemy-profits/releases)!
 
-I'm trying to package this up into an executable, but it's making me regret even writing this in javascript. HELP. I have tried `pkg`, `nexe`, `babel` + `ncc` + `pkg`, `warp`, `babel` + `nexe`, and a few other things I can't even remember. I have no clue what to do.
+currently, there's only a build for windows. I don't have a mac or linux machine to test with, so I won't provide binaries for other operating systems yet.
 
 ## todo:
 
@@ -49,3 +49,4 @@ I'm trying to package this up into an executable, but it's making me regret even
 -   [ ] detect optimal matgroup item to use (i.e. purified water is easier to obtain than distilled water, but they're in the same matgroup)
 -   [ ] make executable that ships with external chromium (for puppeteer)
 -   [ ] add support for non na / eu regions
+-   [ ] allow the script to just start over from the options select when finished, so users can select another category without restarting the whole thing
