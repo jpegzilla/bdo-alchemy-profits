@@ -31,9 +31,18 @@ if you have [node.js](https://nodejs.org/) installed on your computer, you can u
 
 ## standalone executable
 
-work in progress.
+standalone executables are available on the [releases page]().
 
-I'm trying to package this up into an executable, but it's making me regret even writing this in javascript. HELP. I have tried `pkg`, `nexe`, `babel` + `ncc` + `pkg`, `warp`, `babel` + `nexe`, and a few other things I can't even remember. I have no clue what to do.
+alternatively, you can build one from source:
+
+  1. clone download this repository
+  1. `cd bdo-alchemy-profits`
+  1. `yarn`
+  1. `yarn run webpack`
+  1. `yarn run package:pwp`
+  1. copy `chrome_bin` to `dist/bin`
+
+then you can run dist/bin/dalishain.exe.
 
 ## todo:
 

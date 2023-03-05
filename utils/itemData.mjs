@@ -3,6 +3,7 @@ import axios from 'axios'
 import chalk from 'chalk'
 import fs from 'fs'
 import env from './../env.mjs'
+import path from 'path'
 
 const { PUPPETEER_ARGS } = env
 const ROOT_URL = 'https://bdocodex.com/us/item/'
@@ -31,7 +32,9 @@ const retryWrapper = (axios, { maxRetries }) => {
 }
 
 export const getItemCodexData = async itemIdList => {
-  const stream = fs.createWriteStream('./error.log', { flags: 'a' })
+  const stream = fs.createWriteStream(path.join(process.cwd(), 'error.log'), {
+    flags: 'a',
+  })
 
   console.log(
     `\nI'm getting the ${chalk.cyan(
@@ -43,8 +46,8 @@ export const getItemCodexData = async itemIdList => {
     headless: true,
     args: PUPPETEER_ARGS,
     ignoreHTTPSErrors: true,
-    userDataDir: './puppeteer_cache',
-    executablePath: './chrome_bin/win/chrome.exe',
+    userDataDir: path.join(process.cwd(), 'puppeteer_cache'),
+    executablePath: path.join(process.cwd(), 'chrome_bin/win/chrome.exe'),
   })
 
   const killBrowser = () => {
@@ -114,8 +117,9 @@ export const getItemCodexData = async itemIdList => {
           '#MProductRecipeTable, #ProductRecipeTable',
           { timeout: 5000 }
         )
-      } catch {
+      } catch (e) {
         console.log(`skipped [${itemId}] ${name}`)
+        console.log(e)
         continue
       }
 

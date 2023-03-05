@@ -2,6 +2,7 @@ import axios from 'axios'
 import chalk from 'chalk'
 import env from './../env.mjs'
 import fs from 'fs'
+import path from 'path'
 
 import { NPC_ITEM_INDEX } from './npcItemList.mjs'
 
@@ -131,7 +132,9 @@ export const getAllRecipePrices = async (
 ) => {
   console.log()
 
-  const stream = fs.createWriteStream('./error.log', { flags: 'a' })
+  const stream = fs.createWriteStream(path.join(process.cwd(), 'error.log'), {
+    flags: 'a',
+  })
 
   const mappedRecipePrices = []
   const outOfStockItems = []
