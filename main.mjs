@@ -38,15 +38,12 @@ if (index === -1) {
       'cooking'
     )} together instead! ♫\n`
   )
-  process.exit()
 }
 
 if (!options.includes(subcategory)) {
   console.log(
     "\nI don't know that category! I only know about offensive, defensive, functional, and potion consumables. try one of those categories!\n"
   )
-
-  process.exit()
 }
 
 console.log(
@@ -56,7 +53,6 @@ console.log(
 const main = async () => {
   if (subcategory === 'all') await getConsumableMarketData(subcategory, true)
   else await getConsumableMarketData(subcategory)
-  process.exit()
 }
 
 main()
