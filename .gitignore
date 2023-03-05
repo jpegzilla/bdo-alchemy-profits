@@ -9,3 +9,8 @@ error.log
 
 *.exe
 *.cmd
+
+# build / staging stuff
+
+pack_staging
+chrome_bin
