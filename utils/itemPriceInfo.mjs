@@ -51,7 +51,7 @@ export const getItemPriceInfo = async (itemId, isRecipeIngredient = false) => {
   } catch (e) {
     console.log(
       chalk.red(
-        "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla (that's me!)\n"
+        "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla getItemPriceInfo broke (that's me!)\n"
       )
     )
 
@@ -328,7 +328,7 @@ export const getAllRecipePrices = async (
   } catch (e) {
     console.log(
       chalk.red(
-        "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla (that's me!)\n"
+        "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla getAllRecipePrices broke (that's me!)\n"
       )
     )
 

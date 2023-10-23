@@ -187,7 +187,7 @@ export const getItemCodexData = async itemIdList => {
 
       recipes.push({
         item: name,
-        recipeList: allRecipesForPotion,
+        recipeList: allRecipesForPotion.filter(e => e.length > 1),
         price: minPrice,
         id: itemId,
         totalTradeCount: isNaN(totalTradeCount)
@@ -202,7 +202,7 @@ export const getItemCodexData = async itemIdList => {
     } catch (e) {
       console.log(
         chalk.red(
-          "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla (that's me!)\n"
+          "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla getItemCodexData broke (that's me!)\n"
         )
       )
 
@@ -214,6 +214,8 @@ the bdocodex parser thing has broken. output:
 
       `
       )
+
+      continue
     }
   }
 
