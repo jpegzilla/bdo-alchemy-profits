@@ -299,28 +299,16 @@ export const getAllRecipePrices = async (
     )} silver
     total ingredients in stock: ${chalk.yellow(formatNum(totalIngredientStock))}
 \t${stockCount}
-    total raw profit: ${
-      profit < 0
-        ? `${chalk.red(formatNum(profit))} [max: ${chalk.red(
-            formatNum(~~(profit * maxPotionCount))
-          )}]`
-        : `${chalk.green(formatNum(profit))} [max: ${chalk.green(
-            formatNum(~~(profit * maxPotionCount))
-          )}]`
-    } silver
-    total taxed profit: ${
-      ~~calculateTaxedProfit(profit) <= 0
-        ? `${chalk.red(
-            formatNum(~~calculateTaxedProfit(profit))
-          )} [max: ${chalk.red(
-            formatNum(~~(calculateTaxedProfit(profit) * maxPotionCount))
-          )}]`
-        : `${chalk.green(
-            formatNum(~~calculateTaxedProfit(profit))
-          )} [max: ${chalk.green(
-            formatNum(~~(calculateTaxedProfit(profit) * maxPotionCount))
-          )}]`
-    } silver
+    total raw profit: ${`${chalk[profit <= 0 ? 'red' : 'green'](
+      formatNum(profit)
+    )} [max: ${chalk[profit * maxPotionCount <= 0 ? 'red' : 'green'](
+      formatNum(~~(profit * maxPotionCount))
+    )}]`} silver
+    total taxed profit: ${`${chalk[
+      calculateTaxedProfit(profit) <= 0 ? 'red' : 'green'
+    ](formatNum(~~calculateTaxedProfit(profit)))} [max: ${chalk[
+      calculateTaxedProfit(profit) * maxPotionCount <= 0 ? 'red' : 'green'
+    ](formatNum(~~(calculateTaxedProfit(profit) * maxPotionCount)))}]`} silver
   `
 
       mappedRecipePrices.push({
