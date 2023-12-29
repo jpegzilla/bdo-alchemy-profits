@@ -246,38 +246,39 @@ export const getAllRecipePrices = async (
         })
         .sort((a, b) => a - b)[0]
 
-      const stockCount = recipeToSave
-        .map(e => {
-          const maxPotionAmount =
-            maxPotionCount === Infinity
-              ? Infinity
-              : Math.min(
-                  ~~(e.quant * maxPotionCount),
-                  e.stock === Infinity
-                    ? e.quant * maxPotionCount
-                    : ~~(e.stock / e.quant)
-                )
+      let stockCount = []
+      for (const item of recipeToSave) {
+        const maxPotionAmount =
+          maxPotionCount === Infinity
+            ? Infinity
+            : item.stock === Infinity
+            ? ~~(maxPotionCount / item.quant)
+            : maxPotionCount * item.quant
 
-          const price = e?.minPrice || e?.pricePerOne || 'unknown'
-          const formattedPrice = chalk.yellow(formatNum(price))
-          const formattedMaxPrice = chalk.yellow(
-            formatNum(maxPotionAmount * price)
-          )
-          const formattedPotionAmount = chalk.yellow(formatNum(e.quant))
-          const formattedMaxPotionAmount = chalk.yellow(
-            formatNum(maxPotionAmount)
-          )
-          const formattedStockCount = chalk.yellow(formatNum(e.count))
+        const price = item?.minPrice || item?.pricePerOne || 'unknown'
 
-          const formattedNPCInformation = e?.isNPCItem
-            ? chalk.yellow(` (sold by ${e.npcType} npcs)`)
-            : ''
+        if (maxPotionAmount * price < 0) continue
 
-          return `${formattedPotionAmount} [max: ${formattedMaxPotionAmount}] ${chalk.yellow(
-            `${e.name.toLowerCase()}: ${formattedStockCount}`
+        const formattedPrice = chalk.yellow(formatNum(price))
+        const formattedMaxPrice = chalk.yellow(
+          formatNum(maxPotionAmount * price)
+        )
+        const formattedPotionAmount = chalk.yellow(formatNum(item.quant))
+        const formattedMaxPotionAmount = chalk.yellow(
+          formatNum(maxPotionAmount)
+        )
+        const formattedStockCount = chalk.yellow(formatNum(item.count))
+
+        const formattedNPCInformation = item.isNPCItem
+          ? chalk.yellow(` (sold by ${item.npcType} npcs)`)
+          : ''
+
+        stockCount.push(
+          `${formattedPotionAmount} [max: ${formattedMaxPotionAmount}] ${chalk.yellow(
+            `${item.name.toLowerCase()}: ${formattedStockCount}`
           )} in stock${formattedNPCInformation}. price: ${formattedPrice} [max: ${formattedMaxPrice}] silver`
-        })
-        .join('\n\t')
+        )
+      }
 
       const information = `    ${chalk.yellow(
         `[${id}] [${itemName.toLowerCase()}]`
@@ -298,7 +299,7 @@ export const getAllRecipePrices = async (
       formatNum(totalRecipePrice * maxPotionCount)
     )} silver
     total ingredients in stock: ${chalk.yellow(formatNum(totalIngredientStock))}
-\t${stockCount}
+\t${stockCount.join('\n\t')}
     total raw profit: ${`${chalk[profit <= 0 ? 'red' : 'green'](
       formatNum(profit)
     )} [max: ${chalk[profit * maxPotionCount <= 0 ? 'red' : 'green'](

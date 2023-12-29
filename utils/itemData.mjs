@@ -103,6 +103,9 @@ export const getItemCodexData = async itemIdList => {
 
       await page.goto(url)
 
+      // for debugging
+      // await page.exposeFunction('conlog', (...args) => console.log(...args))
+
       process.stdout.cursorTo(0)
       process.stdout.clearLine()
       process.stdout.write(
@@ -125,12 +128,26 @@ export const getItemCodexData = async itemIdList => {
 
       if (!element) continue // I'm superstitious
 
-      const materialGroupReferences = await element.evaluate(el =>
-        [...el.querySelectorAll('.dt-level + .dt-reward:has(a)')].map(e =>
-          [...e.querySelectorAll('a')]
-            .filter(a => a.href.includes('materialgroup'))
-            .map(a => +a.href.split('/').filter(Boolean).at(-1))
-        )
+      const materialGroupReferences = await element.evaluate(
+        (el, { name }) => {
+          if (
+            el.querySelector('.dt-title a b').textContent.toLowerCase() !==
+            name.toLowerCase()
+          ) {
+            return []
+          }
+
+          return [
+            ...el.querySelectorAll(
+              '.dt-level + .dt-reward:has(a:not([data-tiptype="recipe"]))'
+            ),
+          ].map(e =>
+            [...e.querySelectorAll('a')]
+              .filter(a => a.href.includes('materialgroup'))
+              .map(a => +a.href.split('/').filter(Boolean).at(-1))
+          )
+        },
+        { name }
       )
 
       const mgPage = await browser.newPage()
@@ -187,7 +204,7 @@ export const getItemCodexData = async itemIdList => {
 
       recipes.push({
         item: name,
-        recipeList: allRecipesForPotion.filter(e => e.length > 1),
+        recipeList: allRecipesForPotion, // .filter(e => e.length > 1),
         price: minPrice,
         id: itemId,
         totalTradeCount: isNaN(totalTradeCount)
