@@ -16,6 +16,9 @@ const {
   HIDE_OUT_OF_STOCK,
 } = env
 
+const url = `${ROOT_URL}${MARKET_SUB_LIST}`
+const sellBuyUrl = `${ROOT_URL}${MARKET_SELL_BUY_INFO}`
+
 const formatNum = num =>
   isNaN(num) ? false : Intl.NumberFormat('en-US').format(num)
 
@@ -37,8 +40,6 @@ export const getItemPriceInfo = async (itemId, isRecipeIngredient = false) => {
 
   if (NPC_ITEM_INDEX?.[itemId]) return NPC_ITEM_INDEX[itemId]
 
-  const url = `${ROOT_URL}${MARKET_SUB_LIST}`
-  const sellBuyUrl = `${ROOT_URL}${MARKET_SELL_BUY_INFO}`
   let response
 
   try {
@@ -161,6 +162,9 @@ export const getAllRecipePrices = async (
       )
 
       // find the cheapest recipe in a potion's recipe list
+      // if (recipeList.length === 0) {
+      //   console.log(`RECIPE LIST EMPTY FOR ${itemName}`)
+      // }
       for (const recipe of recipeList) {
         const potentialRecipe = []
 
@@ -203,8 +207,8 @@ export const getAllRecipePrices = async (
 
       const recipeToSave = potentialRecipes
         .sort((a, b) => {
-          const priceA = a.map(mapper).reduce(sum)
-          const priceB = b.map(mapper).reduce(sum)
+          const priceA = a.map(mapper).reduce(sum, [])
+          const priceB = b.map(mapper).reduce(sum, [])
 
           return priceA - priceB
         })?.[0]
@@ -327,6 +331,7 @@ export const getAllRecipePrices = async (
       })
     }
   } catch (e) {
+    console.log(e)
     console.log(
       chalk.red(
         "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla getAllRecipePrices broke (that's me!)\n"
@@ -335,7 +340,7 @@ export const getAllRecipePrices = async (
 
     stream.write(
       `=================== ERROR ===================
-[${url}] ${itemId}, ${name} (${new Date().toISOString()})
+[${url}] ${id}, ${itemName} (${new Date().toISOString()})
 getItemPriceInfo broke, the market api may have changed. output:
     ${JSON.stringify(e, null, 3)}
 

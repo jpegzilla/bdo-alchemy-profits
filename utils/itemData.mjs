@@ -24,7 +24,6 @@ export const getItemCodexData = async itemIdList => {
   const recipes = []
 
   for (const {
-    useAltRecipe = true,
     mainKey: itemId,
     name,
     minPrice,
@@ -35,10 +34,15 @@ export const getItemCodexData = async itemIdList => {
     if (!itemId || isNaN(itemId))
       throw new TypeError('itemId must be a number.')
 
+    // if (name.toLowerCase() !== 'gold ingot') {
+    //   continue
+    // }
+
     let allRecipesForPotion = []
 
     const url = `${ROOT_URL}${itemId}`
-    const recipeDirectURL = `https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=${itemId}&l=us`
+    const RECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=recipes&type=product&item_id=${itemId}&l=us`
+    const MRECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=${itemId}&l=us`
     const RECIPE_COLUMNS = [
       'id',
       'icon',
@@ -52,15 +56,17 @@ export const getItemCodexData = async itemIdList => {
     ]
 
     try {
-      // retryWrapper(axios, { maxRetries: 3 })
-      // const pageString = await axios.get(url)
+      // TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
+      const searchForRecipes = async (
+        recipeLinks = [MRECIPE_DIRECT_URL, RECIPE_DIRECT_URL]
+      ) => {
+        let itemWithIngredients = await axios.get(recipeLinks[0])
 
-      if (useAltRecipe) {
-        const itemWithIngredients = await axios.get(recipeDirectURL)
+        if (!itemWithIngredients?.data) {
+          itemWithIngredients = await axios.get(recipeLinks[1])
+        }
 
-        allRecipesForPotion = itemWithIngredients.data[
-          BDOCODEX_QUERY_DATA_KEY
-        ].map(arr =>
+        return itemWithIngredients.data[BDOCODEX_QUERY_DATA_KEY].map(arr =>
           arr
             .filter((_, i) => !!RECIPE_COLUMNS[i])
             .map((e, i) => {
@@ -97,43 +103,26 @@ export const getItemCodexData = async itemIdList => {
         )
           .filter(e => e[1].toLowerCase() === name.toLowerCase())
           .filter(e => e[3].length === 1)
-
-        const allRecipeSubstitutions = allRecipesForPotion.map((e, i) => [
-          e[2],
-          allRecipesForPotion.map(e => e.at(-1))[i],
-        ])
-
-        // TODO: FINISH THIS
-        // console.log(allRecipeSubstitutions)
-        // matgroups is an array structured like
-        // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
-        // if (category === 'matgroups') {
-        //   console.log(JSON.parse(e))
-        // }
-
-        allRecipesForPotion = allRecipesForPotion.map(e => e[2])
       }
 
-      process.stdout.cursorTo(0)
-      process.stdout.clearLine()
-      process.stdout.write(
-        `  let's read the recipe for ${chalk.yellow(
-          `[${name.toLowerCase()} (#${itemId})]`
-        )}. hmm...`
-      )
+      allRecipesForPotion = await searchForRecipes()
+      if (!allRecipesForPotion.length)
+        await searchForRecipes([RECIPE_DIRECT_URL, MRECIPE_DIRECT_URL])
 
-      recipes.push({
-        item: name,
-        recipeList: allRecipesForPotion, // .filter(e => e.length > 1),
-        price: minPrice,
-        id: itemId,
-        totalTradeCount: isNaN(totalTradeCount)
-          ? 'not available'
-          : totalTradeCount,
-        totalInStock: isNaN(+count || +sumCount)
-          ? 'not available'
-          : +count || +sumCount,
-      })
+      const allRecipeSubstitutions = allRecipesForPotion.map((e, i) => [
+        e[2],
+        allRecipesForPotion.map(e => e.at(-1))[i],
+      ])
+
+      // TODO: FINISH THIS
+      // console.log(allRecipeSubstitutions)
+      // matgroups is an array structured like
+      // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
+      // if (category === 'matgroups') {
+      //   console.log(JSON.parse(e))
+      // }
+
+      allRecipesForPotion = allRecipesForPotion.map(e => e[2])
     } catch (e) {
       console.log(e)
       console.log(
@@ -144,15 +133,36 @@ export const getItemCodexData = async itemIdList => {
 
       stream.write(
         `=================== ERROR ===================
-[${url}] ${itemId}, ${name} (${new Date().toISOString()})
-the bdocodex parser thing has broken. output:
-      ${JSON.stringify(e, null, 3)}
+      [${url}] ${itemId}, ${name} (${new Date().toISOString()})
+      the bdocodex parser thing has broken. output:
+            ${JSON.stringify(e, null, 3)}
 
-      `
+            `
       )
 
       continue
     }
+
+    process.stdout.cursorTo(0)
+    process.stdout.clearLine()
+    process.stdout.write(
+      `  let's read the recipe for ${chalk.yellow(
+        `[${name.toLowerCase()}]`
+      )}. hmm...`
+    )
+
+    recipes.push({
+      item: name,
+      recipeList: allRecipesForPotion, // .filter(e => e.length > 1),
+      price: minPrice,
+      id: itemId,
+      totalTradeCount: isNaN(totalTradeCount)
+        ? 'not available'
+        : totalTradeCount,
+      totalInStock: isNaN(+count || +sumCount)
+        ? 'not available'
+        : +count || +sumCount,
+    })
   }
   stream.end()
 
