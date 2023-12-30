@@ -4,10 +4,15 @@ import chalk from 'chalk'
 import fs from 'fs'
 import env from './../env.mjs'
 import path from 'path'
+import jsdom from 'jsdom'
+
+const { JSDOM } = jsdom
+const DOMParser = new JSDOM().window.DOMParser
 
 const { PUPPETEER_ARGS } = env
 const ROOT_URL = 'https://bdocodex.com/us/item/'
 const ROOT_MATGROUP_URL = 'https://bdocodex.com/us/materialgroup/'
+const BDOCODEX_QUERY_DATA_KEY = 'aaData'
 
 const MATGROUP_ITEM_CACHE = {}
 
@@ -31,7 +36,10 @@ const retryWrapper = (axios, { maxRetries }) => {
   })
 }
 
-export const getItemCodexData = async itemIdList => {
+export const getItemCodexData = async (
+  itemIdList,
+  selector = '#MProductRecipeTable, #ProductRecipeTable'
+) => {
   const stream = fs.createWriteStream(path.join(process.cwd(), 'error.log'), {
     flags: 'a',
   })
@@ -67,6 +75,7 @@ export const getItemCodexData = async itemIdList => {
   console.log()
 
   for (const {
+    useAltRecipe = false,
     mainKey: itemId,
     name,
     minPrice,
@@ -77,11 +86,46 @@ export const getItemCodexData = async itemIdList => {
     if (!itemId || isNaN(itemId))
       throw new TypeError('itemId must be a number.')
 
+    if (name.toLowerCase() !== "clown's blood") {
+      continue
+    }
+
     const url = `${ROOT_URL}${itemId}`
+    const recipeDirectURL = `https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=${itemId}&l=us`
+    const RECIPE_COLUMNS = [
+      'id',
+      'icon',
+      'title',
+      'type',
+      'skill level',
+      'exp',
+      'materials',
+      'products',
+      'prodarray',
+    ]
 
     try {
       retryWrapper(axios, { maxRetries: 3 })
       const pageString = await axios.get(url)
+
+      if (useAltRecipe) {
+        const itemWithIngredients = await axios.get(recipeDirectURL)
+        console.log(
+          itemWithIngredients.data[BDOCODEX_QUERY_DATA_KEY].map(arr =>
+            arr
+              .filter((_, i) => !!RECIPE_COLUMNS[i])
+              .map((e, i) => {
+                const elem = new DOMParser().parseFromString(e, 'text/html')
+                  .body.textContent
+
+                return { element: elem, category: RECIPE_COLUMNS[i] }
+              })
+              .filter(e => e.category === 'prodarray')
+              .map(e => JSON.parse(e.element))
+          )
+        )
+      }
+
       if (!pageString.data.includes('ProductRecipeTable')) continue
 
       const page = await browser.newPage()
@@ -104,22 +148,19 @@ export const getItemCodexData = async itemIdList => {
       await page.goto(url)
 
       // for debugging
-      // await page.exposeFunction('conlog', (...args) => console.log(...args))
+      await page.exposeFunction('conlog', (...args) => console.log(...args))
 
       process.stdout.cursorTo(0)
       process.stdout.clearLine()
       process.stdout.write(
         `  let's read the recipe for ${chalk.yellow(
-          `[${name.toLowerCase()}]`
+          `[${name.toLowerCase()} (#${itemId})]`
         )}. hmm...`
       )
 
       let element
       try {
-        element = await page.waitForSelector(
-          '#MProductRecipeTable, #ProductRecipeTable',
-          { timeout: 5000 }
-        )
+        element = await page.waitForSelector(selector, { timeout: 5000 })
       } catch (e) {
         console.log(`skipped [${itemId}] ${name}`)
         console.log(e)
@@ -130,21 +171,35 @@ export const getItemCodexData = async itemIdList => {
 
       const materialGroupReferences = await element.evaluate(
         (el, { name }) => {
+          if (name.toLowerCase() === 'pure titanium crystal') {
+            // conlog(el.outerHTML)
+            conlog(
+              `\nwant: ${name.toLowerCase()}, codex: ${el
+                .querySelector('.dt-title a b')
+                .textContent.toLowerCase()}, match? ${
+                name.toLowerCase() ===
+                el.querySelector('.dt-title a b').textContent.toLowerCase()
+              }`
+            )
+
+            conlog(el.querySelectorAll('.dt-reward > div').length)
+
+            conlog('\n\n')
+          }
+
           if (
             el.querySelector('.dt-title a b').textContent.toLowerCase() !==
-            name.toLowerCase()
+              name.toLowerCase() ||
+            el.querySelectorAll('.dt-reward > div').length !== 1
           ) {
             return []
           }
 
-          return [
-            ...el.querySelectorAll(
-              '.dt-level + .dt-reward:has(a:not([data-tiptype="recipe"]))'
-            ),
-          ].map(e =>
-            [...e.querySelectorAll('a')]
-              .filter(a => a.href.includes('materialgroup'))
-              .map(a => +a.href.split('/').filter(Boolean).at(-1))
+          return [...el.querySelectorAll('.dt-level + .dt-reward:has(a)')].map(
+            e =>
+              [...e.querySelectorAll('a')]
+                .filter(a => a.href.includes('materialgroup'))
+                .map(a => +a.href.split('/').filter(Boolean).at(-1))
           )
         },
         { name }
@@ -185,11 +240,12 @@ export const getItemCodexData = async itemIdList => {
 
       await mgPage.close()
 
-      const allRecipesForPotion = await element.evaluate(
-        (el, mgItemList) =>
-          // hmm...surely this very specific combination of selectors
-          // will never change, breaking the entire application...
-          [...el.querySelectorAll('.dt-level + .dt-reward:has(a)')].map(e =>
+      const allRecipesForPotion = await element.evaluate((el, mgItemList) => {
+        // hmm...surely this very specific combination of selectors
+        // will never change, breaking the entire application...
+
+        return [...el.querySelectorAll('.dt-level + .dt-reward:has(a)')].map(
+          e =>
             [...e.querySelectorAll('a')]
               .map(a => ({
                 quant: +a.querySelector('.quantity_small').textContent,
@@ -198,9 +254,10 @@ export const getItemCodexData = async itemIdList => {
                   : +a.href.split('/').filter(Boolean).at(-1),
               }))
               .filter(i => !!i.id)
-          ),
-        MATGROUP_ITEM_CACHE
-      )
+        )
+      }, MATGROUP_ITEM_CACHE)
+
+      console.log(allRecipesForPotion)
 
       recipes.push({
         item: name,
@@ -217,6 +274,7 @@ export const getItemCodexData = async itemIdList => {
 
       await page.close()
     } catch (e) {
+      console.log(e)
       console.log(
         chalk.red(
           "\n\nif you're not messing with the code, you should never see this. please tell @jpegzilla getItemCodexData broke (that's me!)\n"

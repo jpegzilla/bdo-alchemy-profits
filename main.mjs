@@ -14,6 +14,7 @@ const options = [
   'reagent',
   'black stone',
   'magic crystal',
+  'metal and ore',
   'all',
 ]
 
