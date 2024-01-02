@@ -14,7 +14,7 @@ const options = [
   'reagent',
   'black stone',
   'magic crystal',
-  'metal and ore',
+  // 'metal and ore', // taking this out because often the recipes are inaccurate
   'all',
 ]
 

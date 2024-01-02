@@ -64,7 +64,7 @@ export const getConsumableMarketData = async (
       'reagent',
       'black stone',
       'magic crystal',
-      'metal and ore',
+      // 'metal and ore',
     ].includes(subcategory)
   )
     nonPotionSubCategory = true
@@ -172,14 +172,14 @@ export const getConsumableMarketData = async (
       )
     })
 
-    let metalAndOre = []
-    await doIfCategoryMatches('metal and ore', async () => {
-      metalAndOre = await axios.post(
-        url,
-        `${RVT}&mainCategory=25&subcategory=1`,
-        REQUEST_OPTS
-      )
-    })
+    // let metalAndOre = []
+    // await doIfCategoryMatches('metal and ore', async () => {
+    //   metalAndOre = await axios.post(
+    //     url,
+    //     `${RVT}&mainCategory=25&subcategory=1`,
+    //     REQUEST_OPTS
+    //   )
+    // })
 
     if (
       (!nonPotionSubCategory && !consumableResponse?.data) ||
@@ -188,8 +188,8 @@ export const getConsumableMarketData = async (
       (subcategory === 'reagent' && !reagentResponse?.data) ||
       (subcategory === 'black stone' && !blackStoneResponse?.data) ||
       (subcategory === 'alchemy stone' && !alchemyStoneResponse?.data) ||
-      (subcategory === 'magic crystal' && !magicCrystalResponse?.data) ||
-      (subcategory === 'metal and ore' && !metalAndOre?.data)
+      (subcategory === 'magic crystal' && !magicCrystalResponse?.data)
+      // || (subcategory === 'metal and ore' && !metalAndOre?.data)
     ) {
       throw new Error(
         'there was an issue communicating with the black desert api. check your token / cookie. (blood / oil / black stone / reagent / alchemy stone / magic crystal response invalid)'
@@ -250,12 +250,12 @@ export const getConsumableMarketData = async (
         magicCrystalData.push(data)
       }
 
-    const metalAndOreData = []
-    if (metalAndOre?.data)
-      for (const metal of metalAndOre.data.marketList) {
-        const data = await getItemPriceInfo(metal.mainKey)
-        metalAndOreData.push(data)
-      }
+    // const metalAndOreData = []
+    // if (metalAndOre?.data)
+    //   for (const metal of metalAndOre.data.marketList) {
+    //     const data = await getItemPriceInfo(metal.mainKey)
+    //     metalAndOreData.push(data)
+    //   }
 
     aggregateResponse = [
       ...consumableData,
@@ -265,7 +265,7 @@ export const getConsumableMarketData = async (
       ...alchemyStoneData,
       ...blackStoneData,
       ...magicCrystalData,
-      ...metalAndOreData,
+      // ...metalAndOreData,
     ]
   } else {
     const response = await axios.post(
