@@ -107,7 +107,10 @@ export const getItemCodexData = async itemIdList => {
 
       allRecipesForPotion = await searchForRecipes()
       if (!allRecipesForPotion.length)
-        await searchForRecipes([RECIPE_DIRECT_URL, MRECIPE_DIRECT_URL])
+        allRecipesForPotion = await searchForRecipes([
+          RECIPE_DIRECT_URL,
+          MRECIPE_DIRECT_URL,
+        ])
 
       const allRecipeSubstitutions = allRecipesForPotion.map((e, i) => [
         e[2],
