@@ -22,20 +22,17 @@ const sellBuyUrl = `${ROOT_URL}${MARKET_SELL_BUY_INFO}`
 const formatNum = num =>
   isNaN(num) ? false : Intl.NumberFormat('en-US').format(num)
 
-const calculateTaxedProfit = (profit, valuePack = true, fameLevel = 1) => {
-  // TODO: this calculation is wrong if profit is negative
-  // which I guess doesn't really matter but still I'll fix it
+const calculateTaxedPrice = (price, valuePack = true, fameLevel = 1) => {
   const fameLevels = [1, 1.005, 1.01, 1.015]
-  const profitMinusTax = profit - profit * 0.65
-  const outputProfit =
-    profitMinusTax * (valuePack ? 1.3 : 1) * fameLevels[fameLevel]
+  const outputPrice =
+    0.65 * ((valuePack ? 0.3 : 0) + fameLevels[fameLevel]) * price
 
-  return Math.floor(outputProfit)
+  return Math.floor(outputPrice)
 }
 
 export const getItemPriceInfo = async (itemId, isRecipeIngredient = false) => {
   if (isNaN(itemId)) {
-    throw new TypeError('must supply a numerical item id.')
+    throw new TypeError(`must supply a numerical item id. got: ${itemId}`)
   }
 
   if (NPC_ITEM_INDEX?.[itemId]) return NPC_ITEM_INDEX[itemId]
@@ -126,16 +123,16 @@ getItemPriceInfo broke, the market api may have changed. output:
   }
 }
 
+const stream = fs.createWriteStream(path.join(process.cwd(), 'error.log'), {
+  flags: 'a',
+})
+
 export const getAllRecipePrices = async (
   itemDataList,
   getIngredientCache,
   updateIngredientCache
 ) => {
   console.log()
-
-  const stream = fs.createWriteStream(path.join(process.cwd(), 'error.log'), {
-    flags: 'a',
-  })
 
   const mappedRecipePrices = []
   const outOfStockItems = []
@@ -144,7 +141,7 @@ export const getAllRecipePrices = async (
       const {
         recipeList,
         item: itemName,
-        price,
+        price: itemMarketPrice,
         id,
         totalInStock,
         totalTradeCount,
@@ -227,7 +224,7 @@ export const getAllRecipePrices = async (
 
       if (!recipeToSave?.length) continue
 
-      const totalRecipePrice = recipeToSave.reduce(
+      const totalOneIngredientsCost = recipeToSave.reduce(
         (p, c) => p + c.totalPrice,
         0
       )
@@ -238,7 +235,7 @@ export const getAllRecipePrices = async (
       const anyIngredientOut = recipeToSave
         .filter(r => !r?.isNPCItem)
         .some(r => r.count === 0 || r.count < r.quant)
-      const profit = price - totalRecipePrice
+      const profit = itemMarketPrice - totalOneIngredientsCost
 
       if (HIDE_UNPROFITABLE_RECIPES && profit < 0) continue
       if (HIDE_OUT_OF_STOCK && (totalIngredientStock < 10 || anyIngredientOut))
@@ -250,6 +247,8 @@ export const getAllRecipePrices = async (
         })
         .sort((a, b) => a - b)[0]
 
+      const totalMaxIngredientCost = totalOneIngredientsCost * maxPotionCount
+
       let stockCount = []
       for (const item of recipeToSave) {
         const maxPotionAmount =
@@ -259,13 +258,13 @@ export const getAllRecipePrices = async (
             ? ~~(maxPotionCount / item.quant)
             : maxPotionCount * item.quant
 
-        const price = item?.minPrice || item?.pricePerOne || 'unknown'
+        const itemMarketPrice = item?.minPrice || item?.pricePerOne || 0
 
-        if (maxPotionAmount * price < 0) continue
+        if (maxPotionAmount * itemMarketPrice < 0) continue
 
-        const formattedPrice = chalk.yellow(formatNum(price))
+        const formattedPrice = chalk.yellow(formatNum(itemMarketPrice))
         const formattedMaxPrice = chalk.yellow(
-          formatNum(maxPotionAmount * price)
+          formatNum(maxPotionAmount * itemMarketPrice)
         )
         const formattedPotionAmount = chalk.yellow(formatNum(item.quant))
         const formattedMaxPotionAmount = chalk.yellow(
@@ -288,7 +287,9 @@ export const getAllRecipePrices = async (
         `[${id}] [${itemName.toLowerCase()}]`
       )}
 
-    market price of completed item: ${chalk.yellow(formatNum(price))} silver
+    market price of completed item: ${chalk.yellow(
+      formatNum(itemMarketPrice)
+    )} silver
     market stock of completed item: ${chalk.yellow(formatNum(totalInStock))}
     ${
       totalTradeCount
@@ -298,35 +299,59 @@ export const getAllRecipePrices = async (
         : ''
     }
     max amount you can create: ${chalk.yellow(formatNum(maxPotionCount))}
-    cost of ingredients: ${chalk.yellow(formatNum(totalRecipePrice))} silver
+    cost of ingredients: ${chalk.yellow(
+      formatNum(totalOneIngredientsCost)
+    )} silver
     total max cost of ingredients: ${chalk.yellow(
-      formatNum(totalRecipePrice * maxPotionCount)
+      formatNum(totalMaxIngredientCost)
     )} silver
     total ingredients in stock: ${chalk.yellow(formatNum(totalIngredientStock))}
 \t${stockCount.join('\n\t')}
-    total raw profit: ${`${chalk[profit <= 0 ? 'red' : 'green'](
+    total income for one item before cost subtraction: ${chalk.yellow(
+      formatNum(itemMarketPrice)
+    )}
+    total income for max items before cost subtraction: ${chalk.yellow(
+      formatNum(itemMarketPrice * maxPotionCount)
+    )}
+    total untaxed profit: ${`${chalk[profit <= 0 ? 'red' : 'green'](
       formatNum(profit)
     )} [max: ${chalk[profit * maxPotionCount <= 0 ? 'red' : 'green'](
-      formatNum(~~(profit * maxPotionCount))
+      formatNum(profit * maxPotionCount)
     )}]`} silver
     total taxed profit: ${`${chalk[
-      calculateTaxedProfit(profit) <= 0 ? 'red' : 'green'
-    ](formatNum(~~calculateTaxedProfit(profit)))} [max: ${chalk[
-      calculateTaxedProfit(profit) * maxPotionCount <= 0 ? 'red' : 'green'
-    ](formatNum(~~(calculateTaxedProfit(profit) * maxPotionCount)))}]`} silver
+      calculateTaxedPrice(itemMarketPrice) - totalOneIngredientsCost <= 0
+        ? 'red'
+        : 'green'
+    ](
+      formatNum(calculateTaxedPrice(itemMarketPrice) - totalOneIngredientsCost)
+    )} [max: ${chalk[
+      calculateTaxedPrice(itemMarketPrice * maxPotionCount) -
+        totalMaxIngredientCost <=
+      0
+        ? 'red'
+        : 'green'
+    ](
+      formatNum(
+        calculateTaxedPrice(itemMarketPrice * maxPotionCount) -
+          totalMaxIngredientCost
+      )
+    )}]`} silver
   `
 
       mappedRecipePrices.push({
         itemName,
-        price,
+        price: itemMarketPrice,
         id,
         information,
         profit,
-        maxTaxedProfit: ~~(calculateTaxedProfit(profit) * maxPotionCount),
-        taxedProfit: calculateTaxedProfit(profit),
+        maxTaxedProfit:
+          calculateTaxedPrice(itemMarketPrice * maxPotionCount) -
+          totalMaxIngredientCost,
+        taxedProfit:
+          calculateTaxedPrice(itemMarketPrice) - totalOneIngredientsCost,
         recipe: {
           items: recipeToSave,
-          totalPrice: totalRecipePrice,
+          totalPrice: totalOneIngredientsCost,
         },
       })
     }
