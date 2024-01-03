@@ -37,6 +37,12 @@ export const getItemCodexData = async itemIdList => {
     // if (name.toLowerCase() !== 'gold ingot') {
     //   continue
     // }
+    // if (name.toLowerCase() !== 'han combined magic crystal - gervish') {
+    //   continue
+    // }
+    // if (name.toLowerCase() !== "clown's blood") {
+    //   continue
+    // }
 
     let allRecipesForPotion = []
 
@@ -66,7 +72,9 @@ export const getItemCodexData = async itemIdList => {
           itemWithIngredients = await axios.get(recipeLinks[1])
         }
 
-        return itemWithIngredients.data[BDOCODEX_QUERY_DATA_KEY].map(arr =>
+        const allRecipesForPotion = itemWithIngredients.data[
+          BDOCODEX_QUERY_DATA_KEY
+        ].map(arr =>
           arr
             .filter((_, i) => !!RECIPE_COLUMNS[i])
             .map((e, i) => {
@@ -101,6 +109,33 @@ export const getItemCodexData = async itemIdList => {
             )
             .map(e => e.element)
         )
+
+        // console.log(allRecipesForPotion)
+        // const allRecipeSubstitutions = []
+        // for (let i = 0; i < allRecipesForPotion.length; i++) {
+        //   const recipe = allRecipesForPotion[i]
+        //   const originalRecipe = recipe[2]
+        //   const newRecipes = []
+        //   const potentialSubs = allRecipesForPotion.map(e => e.at(-1))[i]
+        //
+        //   if (recipe[1].toLowerCase() !== "clown's blood") continue
+        //
+        //   const thing = [originalRecipe.map(e => e.id), potentialSubs]
+        //
+        //   for (const ingredient of originalRecipe) {
+        //   }
+        //
+        //   console.log({ thing })
+        // }
+        //
+        // // TODO: FINISH THIS
+        // console.log(allRecipeSubstitutions)
+        // // matgroups is an array structured like
+        // // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
+        //
+        // const constructPermutations = () => {}
+
+        return allRecipesForPotion
           .filter(e => e[1].toLowerCase() === name.toLowerCase())
           .filter(e => e[3].length === 1)
       }
@@ -111,19 +146,6 @@ export const getItemCodexData = async itemIdList => {
           RECIPE_DIRECT_URL,
           MRECIPE_DIRECT_URL,
         ])
-
-      const allRecipeSubstitutions = allRecipesForPotion.map((e, i) => [
-        e[2],
-        allRecipesForPotion.map(e => e.at(-1))[i],
-      ])
-
-      // TODO: FINISH THIS
-      // console.log(allRecipeSubstitutions)
-      // matgroups is an array structured like
-      // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
-      // if (category === 'matgroups') {
-      //   console.log(JSON.parse(e))
-      // }
 
       allRecipesForPotion = allRecipesForPotion.map(e => e[2])
     } catch (e) {
