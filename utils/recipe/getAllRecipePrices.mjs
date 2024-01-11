@@ -57,10 +57,10 @@ export const getAllRecipePrices = async (
       for (const recipe of recipeList) {
         const potentialRecipe = []
 
-        for (const { quant, id } of recipe) {
-          if (getIngredientCache(id)) {
+        for (const { quant, id: ingredientId } of recipe) {
+          if (getIngredientCache(ingredientId)) {
             potentialRecipe.push({
-              ...getIngredientCache(id),
+              ...getIngredientCache(ingredientId),
               quant,
             })
 
@@ -69,7 +69,7 @@ export const getAllRecipePrices = async (
           let itemPriceInfo
 
           try {
-            itemPriceInfo = await getItemPriceInfo(id, true)
+            itemPriceInfo = await getItemPriceInfo(ingredientId, true)
           } catch (e) {
             stream.write(JSON.stringify(e, null, 3))
           }
@@ -78,7 +78,7 @@ export const getAllRecipePrices = async (
           if (itemPriceInfo.count === 0 && Math.random() > 0.5)
             outOfStockItems.push(itemPriceInfo.name.toLowerCase())
 
-          updateIngredientCache(id, itemPriceInfo)
+          updateIngredientCache(ingredientId, itemPriceInfo)
 
           potentialRecipe.push({
             ...itemPriceInfo,
@@ -254,12 +254,15 @@ export const getAllRecipePrices = async (
       )
     )
 
+    console.log(e)
+
     stream.write(
       `=================== ERROR ===================
-[${url}] ${id}, ${itemName} (${new Date().toISOString()})
-getItemPriceInfo broke, the market api may have changed. output:`
+(${new Date().toISOString()})
+getItemPriceInfo broke, the market api may have changed. output:
+
+${e.message}`
     )
-    stream.write(JSON.stringify(e, null, 3))
   }
 
   stream.end()

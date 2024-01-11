@@ -40,12 +40,12 @@ const categorySearchOptions = (url, searchURL) => [
     queryString: `${RVT}&searchText=magic+crystal`,
     update: data => ({ magicCrystalResponse: data }),
   },
-  {
-    name: 'metal and ore',
-    url,
-    queryString: `${RVT}&mainCategory=25&subcategory=1`,
-    update: data => ({ metalAndOreResponse: data }),
-  },
+  // {
+  //   name: 'metal and ore',
+  //   url,
+  //   queryString: `${RVT}&mainCategory=25&subcategory=1`,
+  //   update: data => ({ metalAndOreResponse: data }),
+  // },
 ]
 
 const doIfCategoryMatches = async (

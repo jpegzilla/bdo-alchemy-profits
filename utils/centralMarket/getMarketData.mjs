@@ -137,9 +137,13 @@ export const getConsumableMarketData = async (
 
   const [mappedRecipePrices, outOfStockItems] = recipePrices
 
-  const recipesToShow = mappedRecipePrices.filter(r =>
-    r.recipe.items.every(i => (HIDE_OUT_OF_STOCK ? i.stock > 0 : true))
-  )
+  const recipesToShow = mappedRecipePrices
+    .filter(r =>
+      r.recipe.items.every(i => (HIDE_OUT_OF_STOCK ? i.stock > 0 : true))
+    )
+    .filter(e =>
+      HIDE_UNPROFITABLE_RECIPES && e.taxedProfit < 0 ? false : true
+    )
 
   const anyProfitsNegative = mappedRecipePrices.some(e => e.taxedProfit < 0)
   // const allProfitsNegative = mappedRecipePrices.every(e => e.taxedProfit < 0)
@@ -175,7 +179,7 @@ const constructItemData = async (
     blackStoneResponse,
     alchemyStoneResponse,
     magicCrystalResponse,
-    metalAndOreResponse,
+    // metalAndOreResponse,
   } = await aggregateCategoryData(url, searchURL, subcategory, allSubcategories)
 
   let consumableResponse = {
@@ -184,7 +188,7 @@ const constructItemData = async (
     },
   }
 
-  if (!nonPotionSubCategory) {
+  if (nonPotionSubCategory === false) {
     for (const subCatId of CONSUMABLE_SUBCATEGORIES.all) {
       const response = await axios.post(
         url,
@@ -214,8 +218,9 @@ const constructItemData = async (
     (subcategory === 'reagent' && !reagentResponse?.data) ||
     (subcategory === 'black stone' && !blackStoneResponse?.data) ||
     (subcategory === 'alchemy stone' && !alchemyStoneResponse?.data) ||
-    (subcategory === 'magic crystal' && !magicCrystalResponse?.data) ||
-    (subcategory === 'metal and ore' && !metalAndOreResponse?.data)
+    (subcategory === 'magic crystal' && !magicCrystalResponse?.data)
+    // ||
+    // (subcategory === 'metal and ore' && !metalAndOreResponse?.data)
   ) {
     throw new Error(
       'there was an issue communicating with the black desert api. check your token / cookie. (blood / oil / black stone / reagent / alchemy stone / magic crystal response invalid)'
@@ -275,12 +280,12 @@ const constructItemData = async (
       magicCrystalData.push(data)
     }
 
-  const metalAndOreData = []
-  if (metalAndOreResponse?.data)
-    for (const metal of metalAndOreResponse.data.marketList) {
-      const data = await getItemPriceInfo(metal.mainKey)
-      metalAndOreData.push(data)
-    }
+  // const metalAndOreData = []
+  // if (metalAndOreResponse?.data)
+  //   for (const metal of metalAndOreResponse.data.marketList) {
+  //     const data = await getItemPriceInfo(metal.mainKey)
+  //     metalAndOreData.push(data)
+  //   }
 
   return [
     ...consumableData,
@@ -290,6 +295,6 @@ const constructItemData = async (
     ...alchemyStoneData,
     ...blackStoneData,
     ...magicCrystalData,
-    ...metalAndOreData,
+    // ...metalAndOreData,
   ]
 }

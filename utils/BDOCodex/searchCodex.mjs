@@ -97,7 +97,8 @@ export const searchCodexForRecipes = async (
   //
   // const constructPermutations = () => {}
 
-  return allRecipesForPotion
-    .filter(e => e[1].toLowerCase() === name.toLowerCase())
-    .filter(e => e[3].length === 1)
+  return allRecipesForPotion.filter(
+    e => e[1].toLowerCase() === name.toLowerCase()
+  )
+  // .filter(e => e[3].length === 1) // this was originally written to get rid of recipes that only have a CHANCE to produce what we want, and thus have more than one product
 }
