@@ -14,7 +14,7 @@ const options = [
   'reagent',
   'black stone',
   'magic crystal',
-  // 'metal and ore', // taking this out because often the recipes are inaccurate
+  'metal and ore', // taking this out because often the recipes are inaccurate
   'all',
 ]
 
@@ -60,8 +60,8 @@ const main = async () => {
   }
 
   await readline.question('(press enter to exit)')
-  console.log()
 
+  console.log()
   process.exit()
 }
 
