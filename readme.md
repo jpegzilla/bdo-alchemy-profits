@@ -29,7 +29,7 @@ if you have [node.js](https://nodejs.org/) installed on your computer, you can u
 
 ![the script options selection](./screenshots/example_two.png)
 
-## standalone executable
+## standalone executable (outdated)
 
 standalone executables are available on the [releases page](https://github.com/jpegzilla/bdo-alchemy-profits/releases)!
 
@@ -42,11 +42,11 @@ currently, there's only a build for windows. I don't have a mac or linux machine
 -   [x] account for market tax
 -   [x] warn about low daily volume for ingredients and consumables
 -   [ ] add a `--silent` or `--minimal` option to just show bare output
--   [ ] **critical:** figure out how to get recipe information without scraping bdocodex. this would speed up the script by a huge amount.
+-   [x] **critical:** figure out how to get recipe information without scraping bdocodex. this would speed up the script by a huge amount.
 -   [x] make it work
 -   [ ] make the code prettier
 -   [ ] make it fast
 -   [ ] detect optimal matgroup item to use (i.e. purified water is easier to obtain than distilled water, but they're in the same matgroup)
--   [ ] make executable that ships with external chromium (for puppeteer)
+-   [x] make executable that ships with external chromium (for puppeteer)
 -   [ ] add support for non na / eu regions
 -   [ ] allow the script to just start over from the options select when finished, so users can select another category without restarting the whole thing
