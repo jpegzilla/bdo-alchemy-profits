@@ -15,6 +15,7 @@ const options = [
   'black stone',
   'magic crystal',
   // 'metal and ore', // taking this out because often the recipes are inaccurate
+  'furniture',
   'all',
 ]
 

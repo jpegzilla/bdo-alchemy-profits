@@ -22,18 +22,28 @@ const RECIPE_COLUMNS = [
 export const searchCodexForRecipes = async (
   itemId,
   name,
-  mRecipesFirst = true
+  mRecipesFirst = true,
+  grade = 1,
+  mainCategory
 ) => {
   const RECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=recipes&type=product&item_id=${itemId}&l=us`
   const MRECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=${itemId}&l=us`
+  const HOUSERECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=designs&type=product&item_id=${itemId}&l=us`
   let recipeLinks = [MRECIPE_DIRECT_URL, RECIPE_DIRECT_URL]
 
-  if (!mRecipesFirst) recipeLinks = recipeLinks.reverse()
+  let itemWithIngredients
+  if (mainCategory === 80) {
+    itemWithIngredients = await axios.get(HOUSERECIPE_DIRECT_URL)
+  } else {
+    if (!mRecipesFirst) recipeLinks = recipeLinks.reverse()
 
-  let itemWithIngredients = await axios.get(recipeLinks[0])
+    if (!itemWithIngredients?.data) {
+      itemWithIngredients = await axios.get(recipeLinks[0])
+    }
 
-  if (!itemWithIngredients?.data) {
-    itemWithIngredients = await axios.get(recipeLinks[1])
+    if (!itemWithIngredients?.data) {
+      itemWithIngredients = await axios.get(recipeLinks[1])
+    }
   }
 
   const allRecipesForPotion = itemWithIngredients.data[

@@ -36,6 +36,11 @@ const CONSUMABLE_SUBCATEGORIES = {
   all: [1, 2, 3, 5],
 }
 
+const FURNITURE_CATEGORY = 80
+const FURNITURE_SUBCATEGORIES = {
+  all: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+}
+
 const START = 0
 
 const INGREDIENT_CACHE = {}
@@ -52,7 +57,10 @@ const retryFailedRequest = err => {
 
 axios.interceptors.response.use(undefined, retryFailedRequest)
 
-let nonPotionSubCategory = false
+const specialSubcategory = {
+  furniture: false,
+  consumable: false,
+}
 const url = `${ROOT_URL}${WORLD_MARKET_LIST}`
 const searchURL = `${ROOT_URL}${MARKET_SEARCH_LIST}`
 
@@ -60,8 +68,11 @@ export const getConsumableMarketData = async (
   subcategory = 'offensive',
   allSubcategories = false
 ) => {
+  if (subcategory === 'furniture') {
+    specialSubcategory.furniture = true
+  }
   if (
-    [
+    ![
       'blood',
       'oil',
       'alchemy stone',
@@ -69,13 +80,15 @@ export const getConsumableMarketData = async (
       'black stone',
       'magic crystal',
       'metal and ore',
+      'furniture',
     ].includes(subcategory)
-  )
-    nonPotionSubCategory = true
+  ) {
+    specialSubcategory.consumable = true
+  }
 
   if (
     !Object.keys(CONSUMABLE_SUBCATEGORIES).includes(subcategory) &&
-    nonPotionSubCategory === false
+    specialSubcategory.consumable === true
   ) {
     throw new TypeError(
       `subcategory must be one of: ${Object.keys(CONSUMABLE_SUBCATEGORIES).join(
@@ -86,9 +99,13 @@ export const getConsumableMarketData = async (
 
   let aggregateResponse
 
-  if (allSubcategories || nonPotionSubCategory) {
+  if (
+    allSubcategories ||
+    specialSubcategory.consumable ||
+    specialSubcategory.furniture
+  ) {
     aggregateResponse = await constructItemData(
-      nonPotionSubCategory,
+      specialSubcategory,
       subcategory,
       allSubcategories
     )
@@ -168,7 +185,7 @@ export const getConsumableMarketData = async (
 }
 
 const constructItemData = async (
-  nonPotionSubCategory,
+  specialSubcategory,
   subcategory,
   allSubcategories
 ) => {
@@ -188,7 +205,13 @@ const constructItemData = async (
     },
   }
 
-  if (nonPotionSubCategory === false) {
+  let furnitureResponse = {
+    data: {
+      marketList: [],
+    },
+  }
+
+  if (specialSubcategory.consumable === true) {
     for (const subCatId of CONSUMABLE_SUBCATEGORIES.all) {
       const response = await axios.post(
         url,
@@ -198,7 +221,7 @@ const constructItemData = async (
 
       if (!response || !response?.data) {
         throw new Error(
-          'there was an issue communicating with the black desert api. check your token / cookie. (all categories)'
+          'there was an issue communicating with the black desert api. check your token / cookie. (consumable category)'
         )
       }
 
@@ -211,8 +234,32 @@ const constructItemData = async (
     }
   }
 
+  if (specialSubcategory.furniture === true) {
+    for (const subCatId of FURNITURE_SUBCATEGORIES.all) {
+      const response = await axios.post(
+        url,
+        `${RVT}&mainCategory=${FURNITURE_CATEGORY}&subcategory=${subCatId}`,
+        REQUEST_OPTS
+      )
+
+      if (!response || !response?.data) {
+        throw new Error(
+          'there was an issue communicating with the black desert api. check your token / cookie. (furniture category)'
+        )
+      }
+
+      const data = response.data?.marketList
+
+      furnitureResponse.data.marketList = [
+        ...furnitureResponse.data.marketList,
+        ...data,
+      ]
+    }
+  }
+
   if (
-    (!nonPotionSubCategory && !consumableResponse?.data) ||
+    (!specialSubcategory.consumable && !consumableResponse?.data) ||
+    (!specialSubcategory.furniture && !furnitureResponse?.data) ||
     (subcategory === 'blood' && !bloodResponse?.data) ||
     (subcategory === 'oil' && !oilResponse?.data) ||
     (subcategory === 'reagent' && !reagentResponse?.data) ||
@@ -250,6 +297,11 @@ const constructItemData = async (
 
   const intermediateConsumableData =
     consumableResponse?.data?.marketList.filter(i => i.grade <= 1) || []
+
+  const intermediateFurnitureData =
+    // furnitureResponse?.data?.marketList.filter(i => i.grade <= 1) || []
+    furnitureResponse?.data?.marketList || []
+
   const intermediateBlackStoneData = blackStoneResponse?.data?.marketList || []
 
   const blackStoneData = []
@@ -262,6 +314,12 @@ const constructItemData = async (
   for (const consumable of intermediateConsumableData) {
     const data = await getItemPriceInfo(consumable.mainKey)
     consumableData.push(data)
+  }
+
+  const furnitureData = []
+  for (const furniture of intermediateFurnitureData) {
+    const data = await getItemPriceInfo(furniture.mainKey)
+    furnitureData.push(data)
   }
 
   const alchemyStoneData = []
@@ -296,5 +354,6 @@ const constructItemData = async (
     ...blackStoneData,
     ...magicCrystalData,
     // ...metalAndOreData,
+    ...furnitureData,
   ]
 }

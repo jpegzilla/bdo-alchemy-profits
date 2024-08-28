@@ -26,6 +26,8 @@ export const getItemCodexData = async itemIdList => {
     totalTradeCount,
     count,
     sumCount,
+    grade,
+    mainCategory,
   } of itemIdList) {
     if (!itemId || isNaN(itemId))
       throw new TypeError('itemId must be a number.')
@@ -44,10 +46,22 @@ export const getItemCodexData = async itemIdList => {
     const url = `${ROOT_URL}${itemId}`
 
     try {
-      allRecipesForPotion = await searchCodexForRecipes(itemId, name)
+      allRecipesForPotion = await searchCodexForRecipes(
+        itemId,
+        name,
+        null,
+        grade,
+        mainCategory
+      )
 
-      if (!allRecipesForPotion.length)
-        allRecipesForPotion = await searchCodexForRecipes(itemId, name, false)
+      if (!allRecipesForPotion.length && mainCategory !== 80)
+        allRecipesForPotion = await searchCodexForRecipes(
+          itemId,
+          name,
+          false,
+          grade,
+          mainCategory
+        )
 
       allRecipesForPotion = allRecipesForPotion.map(e => e[2])
     } catch (e) {
