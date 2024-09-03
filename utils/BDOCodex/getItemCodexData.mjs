@@ -100,6 +100,7 @@ export const getItemCodexData = async itemIdList => {
       totalInStock: isNaN(+count || +sumCount)
         ? 'not available'
         : +count || +sumCount,
+      mainCategory,
     })
   }
   stream.end()
