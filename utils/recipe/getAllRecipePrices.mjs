@@ -99,7 +99,7 @@ export const getAllRecipePrices = async (
       let AVERAGE_PROCS = 1
       if ([25, 35].includes(mainCategory)) {
         if (
-          !/draught|\[mix\]|\[party\]|immortal\:|perfume|indignation/.test(
+          !/oil of|draught|\[mix\]|\[party\]|immortal\:|perfume|indignation/.test(
             itemName.toLowerCase()
           )
         ) {
