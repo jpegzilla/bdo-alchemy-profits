@@ -21,6 +21,12 @@ export default {
       Cookie: COOKIE,
     },
   },
+  AXIOS_HEADERS: {
+    'user-agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    dnt: 1,
+    'x-requested-with': 'XMLHttpRequest',
+  },
   PUPPETEER_ARGS: [
     '--autoplay-policy=user-gesture-required',
     '--disable-background-networking',

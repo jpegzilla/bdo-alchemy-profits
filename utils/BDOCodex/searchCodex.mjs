@@ -1,6 +1,9 @@
 import jsdom from 'jsdom'
 import axios from 'axios'
 
+import env from './../../env.mjs'
+
+const { AXIOS_HEADERS } = env
 const { JSDOM } = jsdom
 const DOMParser = new JSDOM().window.DOMParser
 
@@ -33,16 +36,22 @@ export const searchCodexForRecipes = async (
 
   let itemWithIngredients
   if (mainCategory === 80) {
-    itemWithIngredients = await axios.get(HOUSERECIPE_DIRECT_URL)
+    itemWithIngredients = await axios.get(HOUSERECIPE_DIRECT_URL, {
+      headers: AXIOS_HEADERS,
+    })
   } else {
     if (!mRecipesFirst) recipeLinks = recipeLinks.reverse()
 
     if (!itemWithIngredients?.data) {
-      itemWithIngredients = await axios.get(recipeLinks[0])
+      itemWithIngredients = await axios.get(recipeLinks[0], {
+        headers: AXIOS_HEADERS,
+      })
     }
 
     if (!itemWithIngredients?.data) {
-      itemWithIngredients = await axios.get(recipeLinks[1])
+      itemWithIngredients = await axios.get(recipeLinks[1], {
+        headers: AXIOS_HEADERS,
+      })
     }
   }
 

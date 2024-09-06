@@ -144,8 +144,6 @@ export const getConsumableMarketData = async (
     sortedData.slice(START, START + BATCH_SIZE || Infinity)
   )
 
-  console.log(itemDataList)
-
   const recipePrices = await getAllRecipePrices(
     itemDataList,
     id => INGREDIENT_CACHE[id] || false,
