@@ -7,6 +7,7 @@ const options = [
   'offensive',
   'defensive',
   'functional',
+  'other',
   'potion',
   'blood',
   'oil',

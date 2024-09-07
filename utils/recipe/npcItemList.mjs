@@ -127,6 +127,22 @@ export const NPC_ITEM_INDEX = {
     isNPCItem: true,
     npcType: 'old moon',
   },
+  820936: {
+    name: 'Spellbound Catalyst',
+    mainKey: 820936,
+    pricePerOne: 1000000,
+    count: Infinity,
+    isNPCItem: true,
+    npcType: 'old moon',
+  },
+  59378: {
+    name: 'Growth Reagent',
+    mainKey: 59378,
+    pricePerOne: 60000000,
+    count: Infinity,
+    isNPCItem: true,
+    npcType: 'old moon',
+  },
   4986: {
     name: "Ibellab's Essence",
     mainKey: 4986,

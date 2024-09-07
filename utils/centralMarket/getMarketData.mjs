@@ -33,7 +33,8 @@ const CONSUMABLE_SUBCATEGORIES = {
   defensive: 2,
   functional: 3,
   potion: 5,
-  all: [1, 2, 3, 5],
+  other: 8,
+  all: [1, 2, 3, 5, 8],
 }
 
 const FURNITURE_CATEGORY = 80
@@ -175,7 +176,7 @@ export const getConsumableMarketData = async (
   const finalOutOfStockItems = [...new Set(outOfStockItems)]
 
   logRecipeInfo(
-    !(HIDE_OUT_OF_STOCK && recipesToShow.length === 0) ||
+    recipesToShow.length === 0 ||
       (HIDE_UNPROFITABLE_RECIPES && anyProfitsNegative),
     anyProfitsNegative,
     recipesToShow,
@@ -212,7 +213,7 @@ const constructItemData = async (
   //   },
   // }
 
-  if (specialSubcategory.consumable === true) {
+  if (specialSubcategory.consumable === true || allSubcategories) {
     for (const subCatId of CONSUMABLE_SUBCATEGORIES.all) {
       const response = await axios.post(
         url,
@@ -279,7 +280,7 @@ const constructItemData = async (
   if (bloodResponse?.data)
     for (const blood of bloodResponse.data.list) {
       const data = await getItemPriceInfo(blood.mainKey)
-      if (data.grade === 0) bloodData.push(data)
+      // if (data.grade === 0) bloodData.push(data)
     }
 
   const reagentData = []
@@ -293,11 +294,12 @@ const constructItemData = async (
   if (oilResponse?.data)
     for (const oil of oilResponse.data.list) {
       const data = await getItemPriceInfo(oil.mainKey)
-      if (data.grade === 0) oilData.push(data)
+      // if (data.grade === 0) oilData.push(data)
     }
 
   const intermediateConsumableData =
-    consumableResponse?.data?.marketList.filter(i => i.grade <= 1) || []
+    // consumableResponse?.data?.marketList.filter(i => i.grade <= 1) || []
+    consumableResponse?.data?.marketList || []
 
   // const intermediateFurnitureData =
   //   // furnitureResponse?.data?.marketList.filter(i => i.grade <= 1) || []

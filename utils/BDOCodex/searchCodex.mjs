@@ -1,9 +1,11 @@
 import jsdom from 'jsdom'
 import axios from 'axios'
+import fs from 'fs'
+import path from 'path'
 
 import env from './../../env.mjs'
 
-const { AXIOS_HEADERS } = env
+const { AXIOS_HEADERS, RECIPE_FILE_NAME } = env
 const { JSDOM } = jsdom
 const DOMParser = new JSDOM().window.DOMParser
 
@@ -20,8 +22,21 @@ const RECIPE_COLUMNS = [
   'matgroups',
 ]
 
-// TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
+const ensureFile = filename => {
+  fs.open(filename, 'r', err => {
+    if (err) {
+      fs.writeFile(filename, '', err => {
+        if (err) {
+          console.log(err)
+        }
+      })
+    }
+  })
+}
 
+ensureFile(RECIPE_FILE_NAME)
+
+// TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
 export const searchCodexForRecipes = async (
   itemId,
   name,
@@ -29,6 +44,18 @@ export const searchCodexForRecipes = async (
   grade = 1,
   mainCategory
 ) => {
+  // try to pull recipe from cache first
+  const itemIndex = `${itemId} ${name}`
+  const fileAsString = fs.readFileSync(RECIPE_FILE_NAME).toString()
+  const parsedJSON = JSON.parse(fileAsString || '{}')
+  const potentialCachedRecipes = parsedJSON[itemIndex]
+
+  if (potentialCachedRecipes) {
+    return potentialCachedRecipes.filter(
+      e => e[1].toLowerCase() === name.toLowerCase()
+    )
+  }
+
   const RECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=recipes&type=product&item_id=${itemId}&l=us`
   const MRECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=${itemId}&l=us`
   const HOUSERECIPE_DIRECT_URL = `https://bdocodex.com/query.php?a=designs&type=product&item_id=${itemId}&l=us`
@@ -115,6 +142,14 @@ export const searchCodexForRecipes = async (
   // // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
   //
   // const constructPermutations = () => {}
+
+  // cache the recipe for later. if recipes change, we need to delete this file and re-run the scripy to generate a new cache. if a new recipe is added, it doesn't have to be deleted.
+  const newRecipes = {
+    ...parsedJSON,
+    [itemIndex]: allRecipesForPotion,
+  }
+  const stringifiedRecipes = JSON.stringify(newRecipes, null, 3)
+  fs.writeFileSync(RECIPE_FILE_NAME, stringifiedRecipes)
 
   return allRecipesForPotion.filter(
     e => e[1].toLowerCase() === name.toLowerCase()

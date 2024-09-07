@@ -31,7 +31,7 @@ const categorySearchOptions = (url, searchURL) => [
   {
     name: 'alchemy stone',
     url: searchURL,
-    queryString: `${RVT}&searchText=alchemy+stone`,
+    queryString: `${RVT}&searchText=stone+of`,
     update: data => ({ alchemyStoneResponse: data }),
   },
   {
