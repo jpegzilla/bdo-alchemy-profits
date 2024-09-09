@@ -35,6 +35,8 @@ const ensureFile = filename => {
 }
 
 ensureFile(RECIPE_FILE_NAME)
+const fileAsString = fs.readFileSync(RECIPE_FILE_NAME).toString()
+const parsedJSON = JSON.parse(fileAsString || '{}')
 
 // TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
 export const searchCodexForRecipes = async (
@@ -46,8 +48,6 @@ export const searchCodexForRecipes = async (
 ) => {
   // try to pull recipe from cache first
   const itemIndex = `${itemId} ${name}`
-  const fileAsString = fs.readFileSync(RECIPE_FILE_NAME).toString()
-  const parsedJSON = JSON.parse(fileAsString || '{}')
   const potentialCachedRecipes = parsedJSON[itemIndex]
 
   if (potentialCachedRecipes) {
@@ -148,7 +148,7 @@ export const searchCodexForRecipes = async (
     ...parsedJSON,
     [itemIndex]: allRecipesForPotion,
   }
-  const stringifiedRecipes = JSON.stringify(newRecipes, null, 3)
+  const stringifiedRecipes = JSON.stringify(newRecipes)
   fs.writeFileSync(RECIPE_FILE_NAME, stringifiedRecipes)
 
   return allRecipesForPotion.filter(
