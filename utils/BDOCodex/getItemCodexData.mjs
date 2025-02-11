@@ -74,9 +74,12 @@ export const getItemCodexData = async itemIdList => {
       stream.write(
         `=================== ERROR ===================
       [${url}] ${itemId}, ${name} (${new Date().toISOString()})
-      the bdocodex parser thing has broken. output:`
+      the bdocodex parser thing has broken. output: ${JSON.stringify(
+        e,
+        Object.getOwnPropertyNames(e),
+        3
+      )}`
       )
-      stream.write(JSON.stringify(e, null, 3))
 
       continue
     }
