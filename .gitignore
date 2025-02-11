@@ -4,6 +4,7 @@ node_modules
 puppeteer_cache
 dist
 error.log
+recipeCache.json
 
 # executable build stuff
 
