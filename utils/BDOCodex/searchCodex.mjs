@@ -37,7 +37,6 @@ const ensureFile = filename => {
   })
 }
 
-ensureFile(RECIPE_FILE_NAME)
 const fileAsString = fs.readFileSync(RECIPE_FILE_NAME).toString()
 const parsedJSON = JSON.parse(fileAsString || '{}')
 
@@ -49,6 +48,7 @@ export const searchCodexForRecipes = async (
   grade = 1,
   mainCategory
 ) => {
+  ensureFile(RECIPE_FILE_NAME)
   // if (name.toLowerCase() !== "clown's blood") return []
   // try to pull recipe from cache first
   const itemIndex = `${itemId} ${name}`
