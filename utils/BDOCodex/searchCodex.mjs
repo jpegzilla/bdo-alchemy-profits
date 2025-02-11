@@ -3,6 +3,8 @@ import axios from 'axios'
 import fs from 'fs'
 import path from 'path'
 
+import { deepPermute } from './../arrayUtils.mjs'
+
 import env from './../../env.mjs'
 
 const { AXIOS_HEADERS, RECIPE_FILE_NAME } = env
@@ -18,8 +20,9 @@ const RECIPE_COLUMNS = [
   'skill level',
   'exp',
   'materials',
+  'total weight of materials',
   'products',
-  'matgroups',
+  'all ingredients',
 ]
 
 const ensureFile = filename => {
@@ -46,6 +49,7 @@ export const searchCodexForRecipes = async (
   grade = 1,
   mainCategory
 ) => {
+  // if (name.toLowerCase() !== "clown's blood") return []
   // try to pull recipe from cache first
   const itemIndex = `${itemId} ${name}`
   const potentialCachedRecipes = parsedJSON[itemIndex]
@@ -62,6 +66,7 @@ export const searchCodexForRecipes = async (
   let recipeLinks = [MRECIPE_DIRECT_URL, RECIPE_DIRECT_URL]
 
   let itemWithIngredients
+
   if (mainCategory === 80) {
     itemWithIngredients = await axios.get(HOUSERECIPE_DIRECT_URL, {
       headers: AXIOS_HEADERS,
@@ -82,6 +87,15 @@ export const searchCodexForRecipes = async (
     }
   }
 
+  // for a recipe length of 4, for example,
+  // recipes are formatted like this in this object:
+  // [itemID, substitute, itemID, substitute, itemID, substitute...]
+  const recipeWithSubstitudeIDs = itemWithIngredients.data[
+    BDOCODEX_QUERY_DATA_KEY
+  ].map(
+    arr => arr.filter((_, i) => i === 9).map(item => JSON.parse(item))[0]
+  )[0]
+
   const allRecipesForPotion = itemWithIngredients.data[
     BDOCODEX_QUERY_DATA_KEY
   ].map(arr =>
@@ -89,69 +103,84 @@ export const searchCodexForRecipes = async (
       .filter((_, i) => !!RECIPE_COLUMNS[i])
       .map((e, i) => {
         const elem = new DOMParser().parseFromString(e, 'text/html').body
-          .textContent
         const category = RECIPE_COLUMNS[i]
 
         if (['materials', 'products'].includes(category)) {
-          const quant = [...elem.matchAll(/\](\d+)/gi)].map(e => +e[1])
+          const quants = [...elem.textContent.matchAll(/\](\d+)/gi)].map(
+            e => +e[1]
+          )
+
           const ids = [
-            ...elem.matchAll(/\/0*([1-9][0-9]*)\D?(?=\d?.webp)/gi),
+            ...elem.innerHTML.matchAll(/\/item\/([1-9][0-9]*)\D/gi),
           ].map(e => +e[1])
 
           return {
-            element: quant.map((e, i) => ({ quant: e, id: ids[i] })).flat(),
-            category: category,
+            element: ids.map((e, i) => ({ id: e, quant: quants[i] })).flat(),
+            category,
           }
         }
 
         if (category === 'title') {
-          return { element: elem.toLowerCase(), category }
+          return { element: elem.textContent.toLowerCase(), category }
         }
 
-        return { element: elem, category }
+        return { element: elem.textContent, category }
       })
       .filter(e =>
-        ['id', 'title', 'materials', 'products', 'matgroups'].includes(
-          e.category
-        )
+        ['id', 'title', 'materials', 'products'].includes(e.category)
       )
       .map(e => e.element)
   )
 
-  // console.log(allRecipesForPotion)
-  // const allRecipeSubstitutions = []
-  // for (let i = 0; i < allRecipesForPotion.length; i++) {
-  //   const recipe = allRecipesForPotion[i]
-  //   const originalRecipe = recipe[2]
-  //   const newRecipes = []
-  //   const potentialSubs = allRecipesForPotion.map(e => e.at(-1))[i]
-  //
-  //   if (recipe[1].toLowerCase() !== "clown's blood") continue
-  //
-  //   const thing = [originalRecipe.map(e => e.id), potentialSubs]
-  //
-  //   for (const ingredient of originalRecipe) {
-  //   }
-  //
-  //   console.log({ thing })
-  // }
-  //
-  // // TODO: FINISH THIS
-  // console.log(allRecipeSubstitutions)
-  // // matgroups is an array structured like
-  // // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
-  //
-  // const constructPermutations = () => {}
+  const allRecipeSubstitutions = []
+  for (let i = 0; i < allRecipesForPotion.length; i++) {
+    const recipe = allRecipesForPotion[i]
+    const originalRecipe = recipe[2]
+    const originalIngredientIndices = originalRecipe.map(item =>
+      recipeWithSubstitudeIDs.findIndex(id => id === item.id)
+    )
 
-  // cache the recipe for later. if recipes change, we need to delete this file and re-run the scripy to generate a new cache. if a new recipe is added, it doesn't have to be deleted.
+    // slice from originalIngredientIndices 0 - i, i-i2, i2-i3, etc.
+    const chunkedBySubstitutionGroups = []
+
+    originalIngredientIndices.forEach((index, i, arr) => {
+      const sliceFrom = Math.max(0, originalIngredientIndices[i])
+      const last = index === arr.length - 1
+
+      chunkedBySubstitutionGroups.push(
+        recipeWithSubstitudeIDs.slice(sliceFrom, last ? Infinity : index + 1)
+      )
+    })
+
+    const originalRecipeLength = originalRecipe.length
+    const permutatedChunks = deepPermute(
+      chunkedBySubstitutionGroups,
+      originalRecipeLength
+    )
+
+    permutatedChunks.forEach(idList => {
+      const recipeWithNewItems = [...recipe]
+      recipeWithNewItems[2] = [...recipe][2].map((recipe, i) => ({
+        ...recipe,
+        id: idList[i],
+      }))
+      allRecipeSubstitutions.push(recipeWithNewItems)
+    })
+  }
+
+  // matgroups is an array structured like
+  // [itemid, substituteid, substituteid, itemid, substituteid, substituteid, etc...]
+
+  // cache the recipe for later. if recipes change, we need to delete this file and re-run the script to generate a new cache. if a new recipe is added, it doesn't have to be deleted.
   const newRecipes = {
     ...parsedJSON,
-    [itemIndex]: allRecipesForPotion,
+    [itemIndex]: allRecipeSubstitutions,
   }
-  const stringifiedRecipes = JSON.stringify(newRecipes)
-  fs.writeFileSync(RECIPE_FILE_NAME, stringifiedRecipes)
 
-  return allRecipesForPotion.filter(
+  // const stringifiedRecipes = JSON.stringify(newRecipes)
+  // fs.writeFileSync(RECIPE_FILE_NAME, stringifiedRecipes)
+
+  return allRecipeSubstitutions.filter(
     e => e[1].toLowerCase() === name.toLowerCase()
   )
   // .filter(e => e[3].length === 1) // this was originally written to get rid of recipes that only have a CHANCE to produce what we want, and thus have more than one product

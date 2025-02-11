@@ -176,7 +176,7 @@ export const getConsumableMarketData = async (
   const finalOutOfStockItems = [...new Set(outOfStockItems)]
 
   logRecipeInfo(
-    recipesToShow.length === 0 ||
+    recipesToShow.length !== 0 ||
       (HIDE_UNPROFITABLE_RECIPES && anyProfitsNegative),
     anyProfitsNegative,
     recipesToShow,
@@ -280,7 +280,7 @@ const constructItemData = async (
   if (bloodResponse?.data)
     for (const blood of bloodResponse.data.list) {
       const data = await getItemPriceInfo(blood.mainKey)
-      // if (data.grade === 0) bloodData.push(data)
+      if (data.grade === 0) bloodData.push(data)
     }
 
   const reagentData = []
@@ -294,7 +294,7 @@ const constructItemData = async (
   if (oilResponse?.data)
     for (const oil of oilResponse.data.list) {
       const data = await getItemPriceInfo(oil.mainKey)
-      // if (data.grade === 0) oilData.push(data)
+      if (data.grade === 0) oilData.push(data)
     }
 
   const intermediateConsumableData =
