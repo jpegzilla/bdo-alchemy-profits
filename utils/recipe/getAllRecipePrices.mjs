@@ -106,7 +106,10 @@ export const getAllRecipePrices = async (
           AVERAGE_PROCS = 2
         }
 
-        if (subcategory === 'reagent') {
+        if (
+          subcategory === 'reagent' ||
+          /reagent/.test(itemName.toLowerCase())
+        ) {
           AVERAGE_PROCS = 3
         }
       }
