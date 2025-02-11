@@ -35,7 +35,8 @@
     "webpack": "webpack --config webpack.config.mjs",
     "postwebpack": "webpack --config postwebpack.config.mjs",
     "browserify": "browserify main.mjs -p esmify > ./dist/br/bundle.js",
-    "clean": "rm -fr ./dist/wp/** ./dist/br/** ./dist/bin/**"
+    "clean": "rm -fr ./dist/wp/** ./dist/br/** ./dist/bin/**",
+    "cleancache": "echo \"{}\" > ./recipeCache.json"
   },
   "dependencies": {
     "axios": "0.27.2",
