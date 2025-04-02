@@ -51,4 +51,7 @@ currently, there's only a build for windows. I don't have a mac or linux machine
 -   [ ] detect optimal matgroup item to use (i.e. purified water is easier to obtain than distilled water, but they're in the same matgroup)
 -   [x] make executable that ships with external chromium (for puppeteer)
 -   [ ] add support for non na / eu regions
+-   [ ] allow user specification of region
 -   [ ] allow the script to just start over from the options select when finished, so users can select another category without restarting the whole thing
+-   [ ] allow users to specify if they wish to show unprofitable recipes / recipes with out-of-stock ingredients
+-   [ ] allow users to specify their own request verification token
