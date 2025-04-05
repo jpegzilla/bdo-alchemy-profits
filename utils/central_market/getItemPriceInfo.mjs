@@ -101,6 +101,12 @@ getItemPriceInfo broke, the market api may have changed. output:`
     return false
   }
 
+  console.log({
+    ...priceList[0],
+    count: buyingCount || priceList[0].count,
+    pricePerOne: buyingPrice || priceList[0].pricePerOne,
+  })
+
   return {
     ...priceList[0],
     count: buyingCount || priceList[0].count,
