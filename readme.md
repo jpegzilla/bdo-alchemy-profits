@@ -20,14 +20,14 @@ good luck!
 
 ## how to use
 
-if you have [node.js](https://nodejs.org/) installed on your computer, you can use the source code.
+if you have [ruby](https://www.ruby-lang.org/en/) installed on your computer, you can use the source code.
 
 1.  `git clone git@github.com:jpegzilla/bdo-alchemy-profits.git`
 1.  `cd bdo-alchemy-profits`
-1.  install [yarn](https://yarnpkg.com/) (`npm i -g yarn`)
-1.  install dependencies (`yarn`)
-1.  run the script (`yarn start`)
-1.  pick a category to search in and wait! it may take a while, as the script scrapes [bdocodex.com](https://bdocodex.com/us/) for recipe information.
+1.  install [rake](https://ruby.github.io/rake/) (`gem install rake`)
+1.  install dependencies (`rake install`)
+1.  run the script (`rake start`)
+1.  pick a category to search in and wait! it may take a while, as the script scrapes [bdocodex.com](https://bdocodex.com/us/) for recipe information. it will try to do this as little as possible, because after the first time most recipes will be cached.
 
 ![the script options selection](./screenshots/example_two.png)
 

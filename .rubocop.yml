@@ -1,0 +1,10 @@
+AllCops:
+  Exclude:
+    - '**/*.gemspec'
+
+Layout/EndOfLine:
+  EnforcedStyle: lf
+
+Metrics/MethodLength:
+  Max: 30
+  CountAsOne: ['array', 'hash', 'heredoc', 'method_call']
