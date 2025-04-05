@@ -28,6 +28,12 @@ console.log(
 console.log(`\n♫ let's practice ${chalk.yellow('alchemy')} together~!`)
 console.log('\n♫ offensive, defensive, or maybe all at once...?')
 
+// const hideUnprofitable = readline.keyInYN('hide unprofitable items?')
+//
+// const hideOutOfStock = readline.keyInYN(
+//   'hide items with out of stock ingredients?'
+// )
+
 const index = readline.keyInSelect(
   options,
   'which category shall we try to make today?'

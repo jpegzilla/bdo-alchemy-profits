@@ -41,6 +41,7 @@ export const getItemCodexData = async itemIdList => {
     // if (name.toLowerCase() !== "clown's blood") {
     //   continue
     // }
+    // if (name !== 'Elixir of Wind') continue
 
     let allRecipesForPotion = []
     const url = `${ROOT_URL}${itemId}`
