@@ -114,6 +114,8 @@ export const getAllRecipePrices = async (
         }
       }
 
+      console.log({ potentialRecipes })
+
       const recipeToSave = potentialRecipes
         .filter(recipe => {
           return recipe.every(item => item.count > 0)
@@ -138,6 +140,8 @@ export const getAllRecipePrices = async (
         })
 
       if (!recipeToSave?.length) continue
+
+      console.log({ recipeToSave })
 
       const totalOneIngredientsCost = Math.floor(
         recipeToSave.reduce((p, c) => p + c.totalPrice, 0) / AVERAGE_PROCS
