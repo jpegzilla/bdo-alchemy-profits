@@ -3,37 +3,14 @@
 require 'tty-prompt'
 require 'rainbow'
 
-# offensive 'category 35, subcategory 1',
-# defensive: 'category 35, subcategory 2',
-# functional: 'category 35, subcategory 3',
-# potion: 'category 35, subcategory 5',
-# other: 'category 35, subcategory 8',
-# blood: 'searches "s blood"',
-# oil: 'searches "oil of"',
-# alchemy stone: 'searches "stone of"',
-# reagent: 'searches "reagent"',
-# black stone: 'category 30, subcategory 1',
-# magic crystal: 'searches "magic crystal"',
-# all: 'collates everything above'
+require_relative 'cli_utils/constants'
 
 # asks the questions and fires up the recipe search
 class UserCLI
-  def initialize
-    @options = [
-      'offensive',
-      'defensive',
-      'functional',
-      'potion',
-      'other',
-      'blood',
-      'oil',
-      'alchemy stone',
-      'reagent',
-      'black stone',
-      'magic crystal',
-      'all'
-    ]
+  attr_accessor :silent
 
+  def initialize(options)
+    @silent = options[:silent]
     @prompt = TTY::Prompt.new
   end
 
@@ -49,14 +26,43 @@ class UserCLI
     Rainbow(string).green
   end
 
-  def ask
-    puts "\n♫ hello! oh? you want to sell #{yellow 'potions'} today? that sounds like fun!\n"
-
-    @prompt.select('which category shall we try to make today?', @options, cycle: true)
+  # log, but cutely
+  def vipiko(string)
+    puts string unless @silent
   end
 
-  def stop
-    puts
+  def add_menu_info(menu, options)
+    menu.enum '.'
+    menu.help "use arrow keys or numbers 1-#{options.length} to navigate, press enter to select. type to search."
+  end
+
+  def choose_category
+    vipiko "\n♫ hello! oh? you want to sell #{yellow 'potions'} today? that sounds like fun!\n\n"
+
+    option = @prompt.select('which category shall we try to make today?', { cycle: true, filter: true }) do |menu|
+      add_menu_info(menu, CLIConstants::CATEGORY_OPTIONS)
+      CLIConstants::CATEGORY_OPTIONS.each do |k, v|
+        menu.choice "#{k} #{Rainbow(v).faint.white}", k
+      end
+    end
+
+    option.to_s
+  end
+
+  def choose_region
+    option = @prompt.select('and where are you in the world?', { cycle: true, filter: true }) do |menu|
+      add_menu_info(menu, CLIConstants::REGION_DOMAINS)
+      CLIConstants::REGION_DOMAINS.each do |k, v|
+        menu.choice "#{k} #{Rainbow(v).faint.white}", k
+      end
+    end
+
+    option.to_s
+  end
+
+  def end_cli
+    vipiko "\nnever mind, let's do some #{yellow 'cooking'} together instead! ♫\n\n"
+
     @prompt.keypress('(press any key to exit)')
 
     exit

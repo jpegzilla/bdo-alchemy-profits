@@ -2,6 +2,11 @@
 
 source 'https://rubygems.org'
 
+gem 'async'
+gem 'async-await'
 gem 'ferrum'
-gem 'tty-prompt'
+gem 'httparty'
 gem 'rainbow'
+gem 'rake'
+gem 'rubocop'
+gem 'tty-prompt'

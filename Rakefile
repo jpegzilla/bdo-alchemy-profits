@@ -19,7 +19,7 @@ end
 desc 'start script'
 task start: [:check_deps] do
   puts
-  system 'ruby main.rb'
+  system "ruby main.rb #{ARGV.slice 1}"
 end
 
 desc 'start server in development mode (with nodemon)'
