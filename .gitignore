@@ -5,6 +5,7 @@ puppeteer_cache
 dist
 error.log
 recipeCache.json
+.idea
 
 # executable build stuff
 
