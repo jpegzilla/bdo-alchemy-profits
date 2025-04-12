@@ -11,9 +11,9 @@ def category_search_options(url, search_url)
     {
       name: 'black stone',
       url: url,
-      query_string: "#{ENVData::RVT}&mainCategory=30&subcategory=1",
+      query_string: "#{ENVData::RVT}&mainCategory=30&subCategory=1",
       update: ->(data) { { blackStoneResponse: data } },
-      search: false,
+      search: false
     },
     {
       name: 'blood',
@@ -94,30 +94,16 @@ class MarketSearcher
 
     category_search_options(url, search_url).each do |category_opts|
       do_if_category_matches(make_match_options.call(category_opts[:name])) do
-        # data = Internet.post(
-        #   category_opts[:url],
-        #   ENVData::REQUEST_OPTS[:headers],
-        #   category_opts[:query_string]
-        # )
-
-        pp 'uri:', URI(category_opts[:url])
-        puts
-        pp 'headers', ENVData::REQUEST_OPTS[:headers]
-        puts
-        pp 'query', category_opts[:query_string]
-        puts
-
         data = HTTParty.post(
           URI(category_opts[:url]),
           headers: ENVData::REQUEST_OPTS[:headers],
-          body: URI(category_opts[:query_string]).to_s
+          body: category_opts[:query_string],
+          content_type: 'application/x-www-form-urlencoded'
         )
 
         pp data
 
-        # if data
-        #   aggregate_response = { **aggregate_response, **category_opts[:update].call(data) }
-        # end
+        aggregate_response = { **aggregate_response, **category_opts[:update].call(data) } if data
       end
     end
 
