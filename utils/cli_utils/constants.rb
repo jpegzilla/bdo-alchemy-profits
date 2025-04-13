@@ -34,6 +34,26 @@ class CLIConstants
     sa: 'blackdesert-tradeweb.playredfox.com',
     exit: 'stops the search'
   }.freeze
+
+  REGION_LANGUAGES = {
+    us: 'us english',
+    de: 'deutsch',
+    fr: 'français',
+    ru: 'русский',
+    es: 'español (na/eu)',
+    sp: 'español (sa)',
+    pt: 'português',
+    jp: '日本語',
+    kr: '한국어',
+    cn: '中文',
+    tw: '繁体中文',
+    th: 'ภาษาไทย',
+    tr: 'türkçe',
+    id: 'basa indonesia',
+    se: 'sea english',
+    gl: 'global lab',
+    exit: 'stops the search'
+  }.freeze
 end
 
 # constants that will be used in by search / scraping scripts
@@ -52,11 +72,16 @@ class ENVData
   MARKET_WAIT_LIST = '/GetWorldMarketWaitList'
   REQUEST_OPTS = {
     method: 'post',
-    headers: {
+    central_market_headers: {
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
       Cookie: COOKIE
+    },
+    bdo_codex_headers: {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
     }
   }.freeze
 

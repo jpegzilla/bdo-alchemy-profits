@@ -18,5 +18,7 @@ end
 # class used to define every ingredient as it will be used by
 # the price calculation mechanisms
 class Ingredient
-  attr_reader :price_per_one, :count
+  def initialize(recipe)
+    pp recipe
+  end
 end

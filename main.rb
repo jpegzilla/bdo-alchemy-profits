@@ -14,6 +14,8 @@ end.parse!
 
 cli = UserCLI.new options
 
+# option setup
+
 category = cli.choose_category
 
 cli.end_cli if category == 'exit'
@@ -21,6 +23,12 @@ cli.end_cli if category == 'exit'
 region = cli.choose_region
 
 cli.end_cli if region == 'exit'
+
+lang = cli.choose_lang
+
+cli.end_cli if lang == 'exit'
+
+# start searching
 
 cli.vipiko("\n♫ let's see if #{cli.yellow category} alchemy items are profitable in #{cli.yellow region}!")
 
@@ -32,6 +40,6 @@ cli.vipiko("\nI'll look for #{cli.yellow(market_item_list.length)} item#{
   market_item_list.empty? || market_item_list.length > 1 ? 's' : ''
 } in #{category == 'all' ? cli.yellow('all categories'): "the #{cli.yellow category} category"}!")
 
-bdo_codex_searcher = BDOCodexSearcher.new(region, cli)
+bdo_codex_searcher = BDOCodexSearcher.new(region, lang, cli)
 
 bdo_codex_searcher.get_item_codex_data market_item_list

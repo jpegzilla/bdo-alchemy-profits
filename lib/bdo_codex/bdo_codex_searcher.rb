@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
-require_relative '../../utils/cli_utils/user_cli'
-
 require 'json'
+require 'httparty'
+require 'nokogiri'
+require 'awesome_print'
+
+require_relative '../../utils/cli_utils/user_cli'
+require_relative '../../utils/array_utils'
+require_relative '../../utils/hash_cache'
 
 # some variables that are necessary for parsing bdocodex data
 class BDO_CODEX_UTILS
@@ -23,66 +28,204 @@ end
 
 # used to retrieve items from BDOCodex
 class BDOCodexSearcher
-  def initialize(region, cli)
+  RECIPE_INGREDIENTS_INDEX = 1
+
+  def initialize(region, lang, cli)
     @region = region
     @root_url = ENVData.get_root_url region
     @cli = cli
+    @region_lang = lang
+    @cache = HashCache.new ENVData::BDO_CODEX_CACHE
   end
 
-  def get_bdo_codex_cache
-    file_content = File.read(ENVData::BDO_CODEX_CACHE)
-
+  def get_recipe_url(url)
     begin
-      return JSON.parse file_content unless file_content.empty?
+      data = HTTParty.get(
+        URI(url),
+        headers: ENVData::REQUEST_OPTS[:bdo_codex_headers],
+        content_type: 'application/x-www-form-urlencoded'
+      )
 
-      {}
+      JSON.parse data unless data.body.nil? or data.body.empty?
     rescue
       {}
     end
   end
 
+  # TODO: is there a way to get rid of all these nested loops in this class?
+  def get_recipe_substitutions(recipe_with_substitute_ids, all_potion_recipes, name)
+    all_recipe_substitutions = []
+    all_potion_recipes.each do |recipe|
+      original_recipe = recipe[RECIPE_INGREDIENTS_INDEX]
+      original_ingredient_indices = original_recipe.map do |item|
+        recipe_with_substitute_ids.find_index { |id| id == item[:id] }
+      end
+
+      chunked_by_substitution_groups = []
+
+      original_ingredient_indices.each.with_index do |_arr_index, idx|
+        slice_from = [0, original_ingredient_indices[idx]].max
+        slice_to = original_ingredient_indices[idx + 1]
+
+        chunked_by_substitution_groups.push(
+          recipe_with_substitute_ids[slice_from..(slice_to ? slice_to - 1 : -1)]
+        )
+      end
+
+      original_recipe_length = original_recipe.length
+      permutated_chunks = ArrayUtils.deep_permute chunked_by_substitution_groups, original_recipe_length
+
+      permutated_chunks.each do |id_list|
+        recipe_with_new_items = [*recipe]
+        recipe_with_new_items[RECIPE_INGREDIENTS_INDEX] = [*recipe][RECIPE_INGREDIENTS_INDEX].map.with_index do |recipe_list, idx|
+          { **recipe_list, id: id_list[idx] }
+        end
+
+        all_recipe_substitutions.push recipe_with_new_items
+      end
+    end
+
+      all_recipe_substitutions.filter { |elem| elem[0].downcase == name.downcase }
+  end
+
+  def parse_raw_recipe(recipe_data, item_name)
+    item_with_ingredients = recipe_data.dig(BDO_CODEX_UTILS::BDOCODEX_QUERY_DATA_KEY)
+
+    if item_with_ingredients
+      recipe_with_substitute_ids = item_with_ingredients.map do |arr|
+        arr.filter.with_index { |_, idx| idx == 9 }
+         .map { |item| JSON.parse(item) }
+         .first
+      end.first
+
+      all_potion_recipes = item_with_ingredients.map do |arr|
+        mapped_item_data = arr
+          .filter.with_index { |_, idx | !BDO_CODEX_UTILS::RECIPE_COLUMNS[idx].nil? }
+          .map.with_index do |raw_element, idx|
+            category = BDO_CODEX_UTILS::RECIPE_COLUMNS[idx]
+
+            next if ['skill level', 'id', 'exp', 'type', 'icon', 'total weight of materials'].include? category
+
+            element = Nokogiri::HTML5 raw_element
+
+            result = {
+              :category => category,
+              :element => element
+            }
+
+            result[:element] = element.text.downcase if category == 'title'
+
+            if %w[materials products].include? category
+              quants = element.text.scan(/\](\d+)/im).map { |e| e[0].to_i }
+
+              ids = element.to_s.scan(/#{@region_lang}\/item\/(\d+)/).map { |e| e[0].to_i }
+              result[:element] = ids.map.with_index { |id, i| { id: id, quant: quants[i]} }.flatten
+            end
+
+            result
+        end
+
+        mapped_item_data
+          .compact
+          .filter { |e| %w[id title materials products].include? e[:category] }
+          .map { |e| e[:element] }
+      end
+
+      get_recipe_substitutions recipe_with_substitute_ids, all_potion_recipes, item_name
+    end
+  end
+
+  def get_item_recipes(item_id, item_name)
+    recipe_direct_url = "https://bdocodex.com/query.php?a=recipes&type=product&item_id=#{item_id}&l=#{@region_lang}"
+    mrecipe_direct_url = "https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=#{item_id}&l=#{@region_lang}"
+    # houserecipe_direct_url = "https://bdocodex.com/query.php?a=designs&type=product&item_id=#{item_id}&l=#{@region_lang}"
+
+    # TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
+    begin
+      direct_data = get_recipe_url recipe_direct_url
+
+      if !direct_data
+        mrecipe_data = get_recipe_url mrecipe_direct_url
+
+        return parse_raw_recipe mrecipe_data, item_name
+      else
+        return parse_raw_recipe direct_data, item_name
+      end
+    rescue StandardError => error
+      puts @cli.red("if you're not messing with the code, you should never see this. get_item_recipes broke.")
+
+      File.open(ENVData::ERROR_LOG, 'a+') do |file|
+        file.write(error)
+        file.write("\n\r")
+      end
+
+      {}
+    end
+  end
+
   def search_codex_for_recipes(item, m_recipes_first)
-    item_index = "#{item[:main_key]} #{item[:name]}"
+    item_id = item[:main_key]
+    item_name = item[:name]
+    item_index = "#{item_id} #{item[:name]}"
+    potential_cached_recipes = @cache.read item_index
+    cache_data = {}
 
-    # File.open(ENVData::BDO_CODEX_CACHE, 'w') do |file|
-    #   data.map do |item|
-    #     item_map[item['mainKey']] = item
-    #   end
-    #
-    #   file.write item_map.to_json
-    # end
+    if potential_cached_recipes
+      return potential_cached_recipes.filter { |elem| elem[0].downcase == item_name.downcase }
+    end
 
-    pp item_index
+    recipes = get_item_recipes item_id, item_name
+    cache_data[item_index] = recipes
+
+    pp recipes
+    @cache.write cache_data
+
+    recipes
   end
 
   # pass in a list of items as retrieved from the central market API
   def get_item_codex_data(item_list)
-    pp item_list
     recipes = []
 
-    item_list.each do |item|
-      item_hash = item.transform_keys { |key|
+    item_list.each do |item_hash|
+      item = item_hash.transform_keys { |key|
         key.gsub(/(.)([A-Z])/,'\1_\2').downcase.to_sym
       }
 
-      next unless item_hash[:main_key]
-
-      all_recipes_for_item = []
-      codex_cache = get_bdo_codex_cache
+      next unless item[:main_key]
 
       begin
-        search_codex_for_recipes item, false
-      rescue StandardError => error
-        @cli.red "if you're not messing with the code, you should never see this. get_item_codex_data broke."
+        search_results = search_codex_for_recipes item, false
 
-        File.open(ENVData::ERROR_LOG, 'w') do |file|
-          file.write('\n\n', error.to_s)
+        if search_results
+          all_recipes_for_item = search_results.map { |res| res[RECIPE_INGREDIENTS_INDEX] }
+
+          @cli.vipiko "let's read the recipe for #{@cli.yellow "[#{item[:name].downcase}]"}. hmm..."
+
+          stock_count = item[:total_in_stock].zero? ? item[:count] : item[:total_in_stock]
+          recipe_hash = {
+            item: item[:name],
+            recipe_list: all_recipes_for_item,
+            price: item[:price_per_one],
+            id: item[:main_key],
+            total_trade_count: item[:total_trade_count].zero? ? 'not available' : item[:total_trade_count],
+            total_in_stock: stock_count.zero? ? 'not available' : stock_count,
+            main_category: item[:main_category],
+            sub_category: item[:sub_category]
+          }
+
+          recipes.push recipe_hash
+        end
+      rescue StandardError => error
+        puts @cli.red("if you're not messing with the code, you should never see this. get_item_codex_data broke.")
+
+        File.open(ENVData::ERROR_LOG, 'a+') do |file|
+          file.write(error)
+          file.write("\n\r")
         end
 
         next
       end
-
-      pp item_hash
     end
   end
 end

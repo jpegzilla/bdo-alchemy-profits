@@ -62,6 +62,17 @@ class UserCLI
     option.to_s
   end
 
+  def choose_lang
+    option = @prompt.select('finally, what language would you like to search bdocodex with?', { cycle: true, filter: true }) do |menu|
+      add_menu_info(menu, CLIConstants::REGION_LANGUAGES)
+      CLIConstants::REGION_LANGUAGES.each do |k, v|
+        menu.choice "#{k} #{Rainbow(v).faint.white}", k
+      end
+    end
+
+    option.to_s
+  end
+
   def end_cli
     vipiko "\nnever mind, let's do some #{yellow 'cooking'} together instead! ♫\n\n"
 

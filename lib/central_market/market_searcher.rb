@@ -4,6 +4,7 @@ require 'httparty'
 require 'json'
 
 require_relative '../../utils/cli_utils/constants'
+require_relative '../../utils/hash_cache'
 
 CONSUMABLE_CATEGORY = 35
 CONSUMABLE_SUBCATEGORIES = {
@@ -111,32 +112,15 @@ class MarketSearcher
     @market_list_url = "#{@root_url}#{ENVData::WORLD_MARKET_LIST}"
     @market_search_url = "#{@root_url}#{ENVData::MARKET_SEARCH_LIST}"
     @market_sub_url = "#{@root_url}#{ENVData::MARKET_SUB_LIST}"
-  end
-
-  def get_market_item_cache
-    file_content = File.read(ENVData::MARKET_CACHE)
-
-    begin
-      return JSON.parse file_content unless file_content.empty?
-
-      {}
-    rescue
-      {}
-    end
+    @cache = HashCache.new ENVData::MARKET_CACHE
   end
 
   def get_alchemy_market_data(category)
+    category_data = {}
     data = construct_item_data(category, category == 'all')
 
-    # cache data
-    item_map = get_market_item_cache
-    File.open(ENVData::MARKET_CACHE, 'w') do |file|
-      data.map do |item|
-        item_map[item['mainKey']] = item
-      end
-
-      file.write item_map.to_json
-    end
+    category_data[category] = data
+    @cache.write category_data
 
     data
   end
@@ -144,7 +128,7 @@ class MarketSearcher
   def get_price_data(elem)
     data = HTTParty.post(
       URI(@market_sub_url),
-      headers: ENVData::REQUEST_OPTS[:headers],
+      headers: ENVData::REQUEST_OPTS[:central_market_headers],
       body: "#{ENVData::RVT}&mainKey=#{elem['mainKey']}&usingCleint=0",
       content_type: 'application/x-www-form-urlencoded'
     )['detailList'][0]
@@ -156,13 +140,13 @@ class MarketSearcher
     aggregate = aggregate_category_data(@market_list_url, @market_search_url, subcategory, all_subcategories)
 
     filtered_aggregate = aggregate.filter do |elem|
-      !elem&.nil?
+      elem != nil
     end
 
     # TODO: this is probably not a smart way to do this type of retry logic
-    cache = get_market_item_cache
+    cache = @cache.read subcategory
     mapped_aggregate = filtered_aggregate.map do |elem|
-      cached_item = cache[elem['mainKey']]
+      cached_item = cache&.dig(elem['mainKey'])
 
       return cached_item unless cached_item.nil?
 
@@ -200,7 +184,7 @@ class MarketSearcher
         begin
           data = HTTParty.post(
             URI(category_opts[:url]),
-            headers: ENVData::REQUEST_OPTS[:headers],
+            headers: ENVData::REQUEST_OPTS[:central_market_headers],
             body: category_opts[:query_string],
             content_type: 'application/x-www-form-urlencoded'
           )
