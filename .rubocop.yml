@@ -8,3 +8,6 @@ Layout/EndOfLine:
 Metrics/MethodLength:
   Max: 30
   CountAsOne: ['array', 'hash', 'heredoc', 'method_call']
+
+Style/SingleArgumentDig:
+  Enabled: false

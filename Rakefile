@@ -7,6 +7,24 @@ task :install do
   system 'bundle install'
 end
 
+task :clean do
+  puts
+  puts 'cleaning dependencies...'
+  system "bundle clean #{ARGV.slice 1}"
+end
+
+task :pristine do
+  puts
+  puts 'pristine-ing dependencies...'
+  system 'bundle pristine'
+end
+
+task :doctor do
+  puts
+  puts 'doctoring dependencies...'
+  system 'bundle doctor'
+end
+
 desc 'check dependencies'
 task :check_deps do
   puts

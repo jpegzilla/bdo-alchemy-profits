@@ -3,9 +3,9 @@
 source 'https://rubygems.org'
 
 gem 'async'
-gem 'async-await'
 gem 'ferrum'
 gem 'httparty'
+gem 'json'
 gem 'rainbow'
 gem 'rake'
 gem 'rubocop'

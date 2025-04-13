@@ -3,8 +3,6 @@
 require 'tty-prompt'
 require 'rainbow'
 
-require_relative 'cli_utils/constants'
-
 # asks the questions and fires up the recipe search
 class UserCLI
   attr_accessor :silent
@@ -24,6 +22,10 @@ class UserCLI
 
   def green(string)
     Rainbow(string).green
+  end
+
+  def cyan(string)
+    Rainbow(string).cyan
   end
 
   # log, but cutely

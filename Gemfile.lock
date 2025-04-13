@@ -10,14 +10,14 @@ GEM
       io-event (~> 1.9)
       metrics (~> 0.12)
       traces (~> 0.15)
-    async-await (0.8.0)
-      async
     base64 (0.2.0)
+    bigdecimal (3.1.9)
     concurrent-ruby (1.3.5)
     console (1.30.2)
       fiber-annotation
       fiber-local (~> 1.1)
       json
+    csv (3.3.3)
     ferrum (0.16)
       addressable (~> 2.5)
       base64 (~> 0.2)
@@ -28,7 +28,8 @@ GEM
     fiber-local (1.1.0)
       fiber-storage
     fiber-storage (1.0.0)
-    httparty (0.21.0)
+    httparty (0.23.1)
+      csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
     io-event (1.10.0)
@@ -36,8 +37,9 @@ GEM
     language_server-protocol (3.17.0.4)
     lint_roller (1.1.0)
     metrics (0.12.2)
-    mini_mime (1.1.2)
-    multi_xml (0.6.0)
+    mini_mime (1.1.5)
+    multi_xml (0.7.1)
+      bigdecimal (~> 3.1)
     parallel (1.26.3)
     parser (3.3.7.4)
       ast (~> 2.4.1)
@@ -61,7 +63,7 @@ GEM
       rubocop-ast (>= 1.44.0, < 2.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (>= 2.4.0, < 4.0)
-    rubocop-ast (1.44.0)
+    rubocop-ast (1.44.1)
       parser (>= 3.3.7.2)
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
@@ -91,13 +93,13 @@ PLATFORMS
 
 DEPENDENCIES
   async
-  async-await
   ferrum
   httparty
+  json
   rainbow
   rake
   rubocop
   tty-prompt
 
 BUNDLED WITH
-   2.5.22
+   2.6.7
