@@ -3,8 +3,11 @@
 node_modules
 puppeteer_cache
 dist
+
 error.log
-recipeCache.json
+market_cache
+bdo_codex_cache
+
 .idea
 
 # executable build stuff
