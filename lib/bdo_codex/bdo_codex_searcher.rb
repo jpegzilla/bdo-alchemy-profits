@@ -170,6 +170,8 @@ class BDOCodexSearcher
     potential_cached_recipes = @cache.read item_index
     cache_data = {}
 
+    return unless item_name.downcase == 'marking reagent'
+
     if potential_cached_recipes
       return potential_cached_recipes.filter { |elem| elem[0].downcase == item_name.downcase }
     end
@@ -202,9 +204,9 @@ class BDOCodexSearcher
 
           @cli.vipiko "let's read the recipe for #{@cli.yellow "[#{item[:name].downcase}]"}. hmm..."
 
-          stock_count = item[:total_in_stock].zero? ? item[:count] : item[:total_in_stock]
+          stock_count = item[:total_in_stock].to_i.zero? ? item[:count].to_i : item[:total_in_stock].to_i
           recipe_hash = {
-            item: item[:name],
+            name: item[:name],
             recipe_list: all_recipes_for_item,
             price: item[:price_per_one],
             id: item[:main_key],
@@ -227,5 +229,7 @@ class BDOCodexSearcher
         next
       end
     end
+
+    recipes
   end
 end

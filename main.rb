@@ -32,7 +32,7 @@ cli.end_cli if lang == 'exit'
 
 cli.vipiko("\n♫ let's see if #{cli.yellow category} alchemy items are profitable in #{cli.yellow region}!")
 
-market_searcher = MarketSearcher.new region
+market_searcher = MarketSearcher.new region, cli
 
 market_item_list = market_searcher.get_alchemy_market_data category
 
@@ -42,4 +42,12 @@ cli.vipiko("\nI'll look for #{cli.yellow(market_item_list.length)} item#{
 
 bdo_codex_searcher = BDOCodexSearcher.new(region, lang, cli)
 
-bdo_codex_searcher.get_item_codex_data market_item_list
+item_codex_data = bdo_codex_searcher.get_item_codex_data market_item_list
+
+# recipe_prices = market_searcher.get_all_recipe_prices item_codex_data, category
+recipe_prices = market_searcher.get_all_recipe_prices item_codex_data, category
+
+# mapped_recipe_prices = recipe_prices[:mapped_recipe_prices]
+# out_of_stock_items = recipe_prices[:out_of_stock_items]
+
+
