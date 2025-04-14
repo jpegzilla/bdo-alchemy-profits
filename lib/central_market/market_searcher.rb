@@ -137,9 +137,11 @@ class MarketSearcher
       headers: ENVData::REQUEST_OPTS[:central_market_headers],
       body: "#{ENVData::RVT}&mainKey=#{elem['mainKey']}&usingCleint=0",
       content_type: 'application/x-www-form-urlencoded'
-    )['detailList'][0]
+    )
 
-    { **elem, **data }
+    if data.dig('detailList')
+      { **elem, **data['detailList'][0] }
+    end
   end
 
   def construct_item_data(subcategory, all_subcategories)
@@ -217,30 +219,37 @@ class MarketSearcher
         headers: ENVData::REQUEST_OPTS[:central_market_headers],
         body: "#{ENVData::RVT}&mainKey=#{ingredient_id}&usingCleint=0",
         content_type: 'application/x-www-form-urlencoded'
-      )['detailList'][0]
-
-      body_string = "#{ENVData::RVT}&mainKey=#{ingredient_data['mainKey']}&subKey=0&chooseKey=0&isUp=true&keyType=0&name=#{URI.encode_www_form_component(ingredient_data['name'])}"
-
-      detailed_price_list = HTTParty.post(
-        URI(@market_sell_buy_url),
-        headers: ENVData::REQUEST_OPTS[:central_market_headers],
-        body: body_string,
-        content_type: 'application/x-www-form-urlencoded'
       )
 
-      optimal_price = detailed_price_list['marketConditionList'].sort do |a, b|
-        b['sellCount'] - a['sellCount']
-      end[0]
+      if ingredient_data.dig('detailList')
+        resolved_data = ingredient_data['detailList'][0]
+        body_string = "#{ENVData::RVT}&mainKey=#{resolved_data['mainKey']}&subKey=0&chooseKey=0&isUp=true&keyType=0&name=#{URI.encode_www_form_component(resolved_data['name'])}"
 
-      if optimal_price['pricePerOne'] && optimal_price['sellCount']
-        return { **ingredient_data, count: optimal_price['sellCount'], pricePerOne: optimal_price['pricePerOne'] }
-      else
-        return { **ingredient_data,count: ingredient_data['count'], pricePerOne: ingredient_data['pricePerOne'] }
+        detailed_price_list = HTTParty.post(
+          URI(@market_sell_buy_url),
+          headers: ENVData::REQUEST_OPTS[:central_market_headers],
+          body: body_string,
+          content_type: 'application/x-www-form-urlencoded'
+        )
+
+        optimal_price = detailed_price_list['marketConditionList'].sort do |a, b|
+          b['sellCount'] - a['sellCount']
+        end[0]
+
+        if optimal_price['pricePerOne'] && optimal_price['sellCount']
+          return { **resolved_data, count: optimal_price['sellCount'], pricePerOne: optimal_price['pricePerOne'] }
+        else
+          return { **resolved_data,count: resolved_data['count'], pricePerOne: resolved_data['pricePerOne'] }
+        end
       end
+
     end
   end
 
   def get_all_recipe_prices(item_codex_data, subcategory)
+    mapped_recipe_prices = []
+    out_of_stock_items = []
+
     # TODO: remove this limiter thing
     item_codex_data[0..0].each do |item_with_recipe|
       potential_recipes = []
@@ -254,8 +263,8 @@ class MarketSearcher
         potential_recipe = []
 
         recipe.each do |ingredient|
-          ingredient_id = ingredient['id']
-          quant = ingredient['quant']
+          ingredient_id = ingredient['id'] ? ingredient['id'] : ingredient[:id]
+          quant = ingredient['quant'] ? ingredient['quant'] : ingredient[:quant]
 
           if @ingredient_cache[ingredient_id]
             cached_ingredient = { **@ingredient_cache[ingredient_id], quant: quant }
@@ -279,6 +288,7 @@ class MarketSearcher
 
           stock_count = get_stock_count item_price_info
 
+          # attach the npc item data (such as infinite stock, etc) to the item
           npc_data = {}
           npc_data = item_price_info if item_price_info[:is_npc_item]
 
@@ -302,13 +312,45 @@ class MarketSearcher
         potential_recipes.push potential_recipe
       end
 
-      return potential_recipes
+      data = map_recipe_prices potential_recipes, item_with_recipe, subcategory
     end
   end
 
-  def map_recipe_prices potential_recipes
-    mapped_recipe_prices = []
-    out_of_stock_items = []
+  def map_recipe_prices(potential_recipes, item, category)
+    average_procs = 1
+
+    if [25, 35].include? item[:main_category]
+      unless /oil of|draught|\[mix\]|\[party\]|immortal:|perfume|indignation/im.match item[:name].downcase
+        average_procs = 2.5
+      end
+
+      if category == 'reagent' || /reagent/.match(item[:name].downcase)
+        average_procs = 3
+      end
+    end
+
+    test_recipes = potential_recipes + potential_recipes
+    # return potential_recipes[0] if potential_recipes.length == 1
+
+    filtered_recipes = test_recipes.filter do |recipe|
+      recipe.all? do |ingredient|
+        ingredient[:total_in_stock] == Float::INFINITY ? true : ingredient[:total_in_stock].to_i > 0
+      end
+    end
+
+    selected_recipe = filtered_recipes.sort_by do |recipe|
+      recipe.map { |ingredient| mapper ingredient }.sum
+    end[0]
+
+    ap selected_recipe
+
+    # mapped_recipes = selected_recipe.map do |recipe|
+    #   total_price = recipe[:price]
+    # end
+  end
+
+  def mapper(item)
+    item[:price].to_i * item[:quant].to_i
   end
 
   def get_stock_count(item_info)

@@ -2,7 +2,7 @@
 
 class NPCItemIndex
   def self.get_item(id)
-    ITEMS.dig(id)
+    ITEMS.dig(id.to_i)
   end
 
   ITEMS = {

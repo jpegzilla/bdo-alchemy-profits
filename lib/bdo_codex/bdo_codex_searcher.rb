@@ -64,8 +64,14 @@ class BDOCodexSearcher
       chunked_by_substitution_groups = []
 
       original_ingredient_indices.each.with_index do |_arr_index, idx|
-        slice_from = [0, original_ingredient_indices[idx]].max
-        slice_to = original_ingredient_indices[idx + 1]
+        slice_from = [0, original_ingredient_indices[idx].to_i].max
+        # slice_to = original_ingredient_indices[idx + 1]
+        # uncomment the slice_to above if you want to check every single
+        # permutation of this recipe, with all substitutions considered
+        # this will be exceedingly slow and generate hundreds and hundreds
+        # of post requests, hammering the black desert market api and
+        # potentially causing incapsula to GET YOU (block your IP)
+        slice_to = slice_from + 1
 
         chunked_by_substitution_groups.push(
           recipe_with_substitute_ids[slice_from..(slice_to ? slice_to - 1 : -1)]
@@ -154,12 +160,14 @@ class BDOCodexSearcher
     rescue StandardError => error
       puts @cli.red("if you're not messing with the code, you should never see this. get_item_recipes broke.")
 
+      ap error.full_message
+
       File.open(ENVData::ERROR_LOG, 'a+') do |file|
         file.write(error)
         file.write("\n\r")
       end
 
-      {}
+      []
     end
   end
 
@@ -170,16 +178,16 @@ class BDOCodexSearcher
     potential_cached_recipes = @cache.read item_index
     cache_data = {}
 
-    return unless item_name.downcase == 'marking reagent'
+    # TODO: remove this check
+    return unless item_name.downcase == 'clear liquid reagent'
 
-    if potential_cached_recipes
+    unless potential_cached_recipes.to_h.empty?
       return potential_cached_recipes.filter { |elem| elem[0].downcase == item_name.downcase }
     end
 
     recipes = get_item_recipes item_id, item_name
     cache_data[item_index] = recipes
 
-    pp recipes
     @cache.write cache_data
 
     recipes
