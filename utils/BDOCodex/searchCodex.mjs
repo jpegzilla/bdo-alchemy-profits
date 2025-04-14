@@ -140,7 +140,8 @@ export const searchCodexForRecipes = async (
 
     originalIngredientIndices.forEach((index, i, arr) => {
       const sliceFrom = Math.max(0, originalIngredientIndices[i])
-      const sliceTo = originalIngredientIndices[i + 1]
+      // const sliceTo = originalIngredientIndices[i + 1]
+      const sliceTo = sliceFrom + 1
 
       chunkedBySubstitutionGroups.push(
         recipeWithSubstitudeIDs.slice(sliceFrom, sliceTo ? sliceTo : Infinity)
