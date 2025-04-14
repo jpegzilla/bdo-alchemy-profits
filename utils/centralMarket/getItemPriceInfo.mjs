@@ -1,8 +1,9 @@
 import axios from 'axios'
 import chalk from 'chalk'
-import env from './../../env.mjs'
 import fs from 'fs'
 import path from 'path'
+
+import env from './../../env.mjs'
 
 import { NPC_ITEM_INDEX } from './../recipe/index.mjs'
 
@@ -55,10 +56,10 @@ getItemPriceInfo broke, the market api may have changed. output:`
     )
   }
 
-  const priceList = response.data.detailList
+  const priceList = response.data?.detailList
   let detailedPriceList
 
-  if (priceList.length === 0) return false
+  if (!priceList || priceList.length === 0) return false
 
   if (isRecipeIngredient) {
     const detailedPriceListResponse = await axios.post(

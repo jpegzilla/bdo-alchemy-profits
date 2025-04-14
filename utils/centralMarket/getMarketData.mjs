@@ -229,6 +229,10 @@ const constructItemData = async (
 
       const data = response.data?.marketList
 
+      if (!data) {
+        continue
+      }
+
       consumableResponse.data.marketList = [
         ...consumableResponse.data.marketList,
         ...data,
