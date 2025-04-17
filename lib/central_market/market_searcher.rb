@@ -319,7 +319,7 @@ class MarketSearcher
 
       @cli.vipiko_overwrite "(#{index + 1} / #{item_codex_data.length}) I'll ask a merchant about the price of ingredients for #{@cli.yellow name}!"
 
-      recipe_list.each do |recipe|
+      recipe_list.each do |(recipe_id, recipe)|
         potential_recipe = []
 
         recipe.each do |ingredient|
@@ -363,6 +363,7 @@ class MarketSearcher
             quant: quant,
             price_per_one: price_per_one,
             count: stock_count,
+            for_recipe_id: recipe_id,
             **npc_data
           }
 
@@ -556,7 +557,7 @@ class MarketSearcher
         stock_counts.push "#{formatted_potion_amount.ljust(4, ' ')} [max: #{formatted_max_potion_amount}] #{@cli.yellow "#{ingredient[:name].downcase}: #{formatted_stock_count}"} in stock#{formatted_npc_information}. price: #{formatted_price} [for max: #{formatted_max_price}]"
       end
 
-      information = "    #{@cli.yellow "[#{item[:id]}] [#{item[:name].downcase}]"}
+      information = "    #{@cli.yellow "[#{item[:id]}] [#{item[:name].downcase}], recipe id: #{selected_recipe[0][:for_recipe_id]}"}
 
     #{padstr("market price of item")}#{@cli.yellow PriceCalculator.format_price item_market_sell_price}
     #{padstr("market stock of item")}#{@cli.yellow PriceCalculator.format_num item[:total_in_stock]}

@@ -28,7 +28,7 @@ end
 
 # used to retrieve items from BDOCodex
 class BDOCodexSearcher
-  RECIPE_INGREDIENTS_INDEX = 1
+  RECIPE_INGREDIENTS_INDEX = 2
 
   def initialize(region, lang, cli, hyper_aggressive = false)
     @region = region
@@ -92,7 +92,8 @@ class BDOCodexSearcher
       end
     end
 
-      all_recipe_substitutions.filter { |elem| elem[0].downcase == name.downcase }
+    # 1 in elem[1] is the index of the recipe name
+    all_recipe_substitutions.filter { |elem| elem[1].downcase == name.downcase }
   end
 
   def parse_raw_recipe(recipe_data, item_name)
@@ -111,9 +112,9 @@ class BDOCodexSearcher
           .map.with_index do |raw_element, idx|
             category = BDO_CODEX_UTILS::RECIPE_COLUMNS[idx]
 
-            next if ['skill level', 'id', 'exp', 'type', 'icon', 'total weight of materials'].include? category
+            next if ['skill level', 'exp', 'type', 'icon', 'total weight of materials'].include? category
 
-            element = Nokogiri::HTML5 raw_element
+            element = Nokogiri::HTML5 raw_element.to_s
 
             result = {
               :category => category,
@@ -121,6 +122,8 @@ class BDOCodexSearcher
             }
 
             result[:element] = element.text.downcase if category == 'title'
+
+            result[:element] = element.text.downcase if category == 'id'
 
             if %w[materials products].include? category
               quants = element.text.scan(/\](\d+)/im).map { |e| e[0].to_i }
@@ -132,10 +135,12 @@ class BDOCodexSearcher
             result
         end
 
-        mapped_item_data
-          .compact
-          .filter { |e| %w[id title materials products].include? e[:category] }
-          .map { |e| e[:element] }
+        filtered_item_data = mapped_item_data
+                               .compact
+                               .filter { |e| %w[id title materials products].include? e[:category] }
+                               .map { |e| e[:element] }
+
+        filtered_item_data
       end
 
       get_recipe_substitutions recipe_with_substitute_ids, all_potion_recipes, item_name
@@ -184,7 +189,7 @@ class BDOCodexSearcher
     # return unless item_name.downcase == 'clear liquid reagent'
 
     unless potential_cached_recipes.to_a.empty?
-      return potential_cached_recipes.filter { |elem| elem[0].downcase == item_name.downcase }
+      return potential_cached_recipes.filter { |elem| elem[1].downcase == item_name.downcase }
     end
 
     recipes = get_item_recipes item_id, item_name
@@ -212,7 +217,11 @@ class BDOCodexSearcher
         search_results = search_codex_for_recipes item, false
 
         if search_results
-          all_recipes_for_item = search_results.map { |res| res[RECIPE_INGREDIENTS_INDEX] }
+          # res[0] is the recipe ID
+          all_recipes_for_item = search_results.map { |res|
+            recipe_array = [res[0], res[RECIPE_INGREDIENTS_INDEX]]
+            recipe_array
+          }
 
           @cli.vipiko_overwrite "(#{index + 1} / #{item_list.length}) let's read the recipe for #{@cli.yellow "[#{item[:name].downcase}]"}. hmm..."
 

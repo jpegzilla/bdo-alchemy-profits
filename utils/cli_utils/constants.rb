@@ -85,7 +85,7 @@ class ENVData
       'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
       Cookie: COOKIE,
-      Dnt: '1'
+      Dnt: '1',
     },
     bdo_codex_headers: {
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
