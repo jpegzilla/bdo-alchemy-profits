@@ -4,7 +4,7 @@ this is a tool that searches the central market for potions and other items that
 
 it assumes you have high enough alchemy mastery (artisan 1) for max procs on recipes that are affected, such as bloods and elixirs.
 
-![an example readout from the script](./screenshots/example_one.png)
+![an example readout from the script](screenshots/new_example_one.png)
 
 of course, there are usually none of these! sometimes there are a few, but they're typically very low volume, limiting total profits. BUT, if there are any, this tool will find them!
 
@@ -12,7 +12,7 @@ this takes into account market tax and shows the gross potential profit as well 
 
 it will also tell you the maximum possible amount of items you can craft (by buying all the available ingredients). if an npc sells the item you need, that will be listed as well.
 
-![an example listing some ingredients sold by npcs.](./screenshots/example_three.png)
+![an example listing some ingredients sold by npcs.](./screenshots/new_example_two.png)
 
 finally, if you really want to make profit on the market, you basically have to go out and gather super rare ingredients yourself. if you can sap all fifteen thornwood trees on the map or pick all three truffle mushrooms, you'll be rolling in cash! and if you _really_ wanna make the big bucks, head to tunkuta! I'm sure you'll have no trouble at all crafting those 10+ million silver potions if you get some turo blood and hearts...although it seems like 99% of turos must be heartless, bloodless vampires or something. or you could harvest 10000 delotia and get a handful of remnants of burnt spirits for corrupt oil of immortality ;P
 
@@ -29,7 +29,7 @@ if you have [ruby](https://www.ruby-lang.org/en/) installed on your computer, yo
 1.  run the script (`rake start`)
 1.  pick a category to search in and wait! it may take a while, as the script scrapes [bdocodex.com](https://bdocodex.com/us/) for recipe information. it will try to do this as little as possible, because after the first time most recipes will be cached.
 
-![the script options selection](./screenshots/example_two.png)
+![the script options selection](./screenshots/new_example_three.png)
 
 ## standalone executable (outdated)
 
