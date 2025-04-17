@@ -24,6 +24,10 @@ class UserCLI
     Rainbow(string).green
   end
 
+  def orange(string)
+    Rainbow(string).orange
+  end
+
   def cyan(string)
     Rainbow(string).cyan
   end
@@ -31,6 +35,16 @@ class UserCLI
   # log, but cutely
   def vipiko(string)
     puts string unless @silent
+  end
+
+  def vipiko_overwrite(string)
+    print "\033[2K\r#{string}"
+    $stdout.flush
+  end
+
+  # log for other stuff
+  def log(string)
+    puts string
   end
 
   def add_menu_info(menu, options)
@@ -63,9 +77,20 @@ class UserCLI
   end
 
   def choose_lang
-    option = @prompt.select('finally, what language would you like to search bdocodex with?', { cycle: true, filter: true }) do |menu|
+    option = @prompt.select('what language would you like to search bdocodex with?', { cycle: true, filter: true }) do |menu|
       add_menu_info(menu, CLIConstants::REGION_LANGUAGES)
       CLIConstants::REGION_LANGUAGES.each do |k, v|
+        menu.choice "#{k} #{Rainbow(v).faint.white}", k
+      end
+    end
+
+    option.to_s
+  end
+
+  def choose_aggression
+    option = @prompt.select('finally, what aggression level would you like to search for recipes with?', { cycle: true, filter: true }) do |menu|
+      add_menu_info(menu, CLIConstants::AGGRESSION_LEVELS)
+      CLIConstants::AGGRESSION_LEVELS.each do |k, v|
         menu.choice "#{k} #{Rainbow(v).faint.white}", k
       end
     end

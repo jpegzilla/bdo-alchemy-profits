@@ -3,6 +3,7 @@
 class HashCache
   def initialize(cache_file)
     @cache_file = cache_file
+    @all_content = read_all
   end
 
   def read_all
@@ -17,7 +18,7 @@ class HashCache
   end
 
   def read(key)
-    read_all&.dig(key)
+    @all_content&.dig(key)
   end
 
   def write(data)

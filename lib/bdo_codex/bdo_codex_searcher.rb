@@ -30,12 +30,13 @@ end
 class BDOCodexSearcher
   RECIPE_INGREDIENTS_INDEX = 1
 
-  def initialize(region, lang, cli)
+  def initialize(region, lang, cli, hyper_aggressive = false)
     @region = region
     @root_url = ENVData.get_root_url region
     @cli = cli
     @region_lang = lang
     @cache = HashCache.new ENVData::BDO_CODEX_CACHE
+    @hyper_aggressive = hyper_aggressive
   end
 
   def get_recipe_url(url)
@@ -65,13 +66,13 @@ class BDOCodexSearcher
 
       original_ingredient_indices.each.with_index do |_arr_index, idx|
         slice_from = [0, original_ingredient_indices[idx].to_i].max
-        # slice_to = original_ingredient_indices[idx + 1]
-        # uncomment the slice_to above if you want to check every single
+        slice_to = slice_from + 1
+        slice_to = original_ingredient_indices[idx + 1] if @hyper_aggressive
+        # set hyper_aggressive to true if you want to check every
         # permutation of this recipe, with all substitutions considered
         # this will be exceedingly slow and generate hundreds and hundreds
         # of post requests, hammering the black desert market api and
         # potentially causing incapsula to GET YOU (block your IP)
-        slice_to = slice_from + 1
 
         chunked_by_substitution_groups.push(
           recipe_with_substitute_ids[slice_from..(slice_to ? slice_to - 1 : -1)]
@@ -160,10 +161,8 @@ class BDOCodexSearcher
     rescue StandardError => error
       puts @cli.red("if you're not messing with the code, you should never see this. get_item_recipes broke.")
 
-      ap error.full_message
-
       File.open(ENVData::ERROR_LOG, 'a+') do |file|
-        file.write(error)
+        file.write(error.full_message)
         file.write("\n\r")
       end
 
@@ -171,6 +170,9 @@ class BDOCodexSearcher
     end
   end
 
+  # m_recipes_first may be useful if a lot of recipes aren't working
+  # refer to the original javascript implementation of
+  # searchCodexForRecipes
   def search_codex_for_recipes(item, m_recipes_first)
     item_id = item[:main_key]
     item_name = item[:name]
@@ -179,9 +181,9 @@ class BDOCodexSearcher
     cache_data = {}
 
     # TODO: remove this check
-    return unless item_name.downcase == 'clear liquid reagent'
+    # return unless item_name.downcase == 'clear liquid reagent'
 
-    unless potential_cached_recipes.to_h.empty?
+    unless potential_cached_recipes.to_a.empty?
       return potential_cached_recipes.filter { |elem| elem[0].downcase == item_name.downcase }
     end
 
@@ -197,7 +199,9 @@ class BDOCodexSearcher
   def get_item_codex_data(item_list)
     recipes = []
 
-    item_list.each do |item_hash|
+    # newline because vipiko is about to start carriage returning
+    puts
+    item_list.each.with_index do |item_hash, index|
       item = item_hash.transform_keys { |key|
         key.gsub(/(.)([A-Z])/,'\1_\2').downcase.to_sym
       }
@@ -210,7 +214,7 @@ class BDOCodexSearcher
         if search_results
           all_recipes_for_item = search_results.map { |res| res[RECIPE_INGREDIENTS_INDEX] }
 
-          @cli.vipiko "let's read the recipe for #{@cli.yellow "[#{item[:name].downcase}]"}. hmm..."
+          @cli.vipiko_overwrite "(#{index + 1} / #{item_list.length}) let's read the recipe for #{@cli.yellow "[#{item[:name].downcase}]"}. hmm..."
 
           stock_count = item[:total_in_stock].to_i.zero? ? item[:count].to_i : item[:total_in_stock].to_i
           recipe_hash = {
@@ -230,7 +234,7 @@ class BDOCodexSearcher
         puts @cli.red("if you're not messing with the code, you should never see this. get_item_codex_data broke.")
 
         File.open(ENVData::ERROR_LOG, 'a+') do |file|
-          file.write(error)
+          file.write(error.full_message)
           file.write("\n\r")
         end
 

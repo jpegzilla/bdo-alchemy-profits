@@ -28,6 +28,14 @@ lang = cli.choose_lang
 
 cli.end_cli if lang == 'exit'
 
+aggression = cli.choose_aggression
+
+cli.end_cli if aggression == 'exit'
+
+if aggression == 'hyperaggressive'
+  puts cli.orange("\nWARN: hyperagressive mode is RISKY AND SLOW. this will evaluate every substitution for every recipe. hammers apis violently. you will get rate limited. you will get IP blocked. her royal holiness imperva incapsula WILL get you. select if you know what all that stuff means and you are ok with waiting 20 minutes.")
+end
+
 # start searching
 
 cli.vipiko("\n♫ let's see if #{cli.yellow category} alchemy items are profitable in #{cli.yellow region}!")
@@ -40,12 +48,17 @@ cli.vipiko("\nI'll look for #{cli.yellow(market_item_list.length)} item#{
   market_item_list.empty? || market_item_list.length > 1 ? 's' : ''
 } in #{category == 'all' ? cli.yellow('all categories'): "the #{cli.yellow category} category"}!")
 
-bdo_codex_searcher = BDOCodexSearcher.new(region, lang, cli)
+bdo_codex_searcher = BDOCodexSearcher.new(region, lang, cli, aggression == 'hyperaggressive')
 
 item_codex_data = bdo_codex_searcher.get_item_codex_data market_item_list
 
 # recipe_prices = market_searcher.get_all_recipe_prices item_codex_data, category
 recipe_prices = market_searcher.get_all_recipe_prices item_codex_data, category
+
+mapped_prices = recipe_prices.sort_by { |recipe| recipe[:max_profit] }.map { |recipe| recipe[:information] }
+
+# ap recipe_prices
+cli.vipiko mapped_prices
 
 # mapped_recipe_prices = recipe_prices[:mapped_recipe_prices]
 # out_of_stock_items = recipe_prices[:out_of_stock_items]

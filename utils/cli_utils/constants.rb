@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'date'
+
 # constants to use when user is configuring the tool
 class CLIConstants
   CATEGORY_OPTIONS = {
@@ -54,6 +56,12 @@ class CLIConstants
     gl: 'global lab',
     exit: 'stops the search'
   }.freeze
+
+  AGGRESSION_LEVELS = {
+    normal: 'evaluate one permutation of each recipe',
+    hyperaggressive: 'evaluate every substitution for every recipe',
+    exit: 'stops the search'
+  }.freeze
 end
 
 # constants that will be used in by search / scraping scripts
@@ -76,14 +84,38 @@ class ENVData
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'User-Agent':
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-      Cookie: COOKIE
+      Cookie: COOKIE,
+      Dnt: '1'
     },
     bdo_codex_headers: {
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+      Dnt: '1'
     }
   }.freeze
+
+  def self.get_central_market_headers(incap_cookie = '')
+    original_cookie = REQUEST_OPTS[:central_market_headers][:Cookie]
+    if rand > 0.5
+      REQUEST_OPTS[:central_market_headers]
+      { **REQUEST_OPTS[:central_market_headers], 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36', Cookie: "#{original_cookie};#{incap_cookie}" }
+    else
+      { **REQUEST_OPTS[:central_market_headers], 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', Cookie: "#{original_cookie};#{incap_cookie}" }
+    end
+  end
+
+  def self.get_incap_cookie(region_domain)
+    new_expiry = Date.today + 365
+    day = Time.now.strftime("%a")
+    month = Time.now.strftime("%b")
+    hour = rand(1..12)
+    minute = rand(1..60)
+    second = rand(1..60)
+
+    # TODO: EXPERIMENTAL - figure out how to simulate incapsula data
+    "visid_incap_2504212=xoYUIj+XR/acq/q6uc0RZyLI/2cAAAAAQUIPAAAAAAAMYr/xXVQYe6Eo4uVK+L6V; expires=#{day}, #{new_expiry.day} #{month} #{new_expiry.year} #{hour}:#{minute}:#{second} GMT; HttpOnly; path=/; Domain=.#{region_domain}; Secure; SameSite=None"
+  end
 
   def self.get_root_url(region)
     "https://#{CLIConstants::REGION_DOMAINS[region.to_sym]}/Home"
