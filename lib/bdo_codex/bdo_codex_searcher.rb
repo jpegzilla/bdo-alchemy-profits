@@ -189,7 +189,8 @@ class BDOCodexSearcher
     # return unless item_name.downcase == 'clear liquid reagent'
 
     unless potential_cached_recipes.to_a.empty?
-      return potential_cached_recipes.filter { |elem| elem[1].downcase == item_name.downcase }
+      recipe_to_maybe_select = potential_cached_recipes.filter { |elem| elem[1].downcase == item_name.downcase }
+      return recipe_to_maybe_select unless recipe_to_maybe_select.empty?
     end
 
     recipes = get_item_recipes item_id, item_name

@@ -384,7 +384,7 @@ class MarketSearcher
 
     puts "\n\n"
 
-    mapped_recipe_prices.filter { |e| !e.nil? }
+    mapped_recipe_prices.filter { |e| !e.nil? && !!e }
   end
 
   def map_recipe_prices(potential_recipes, item, category)
@@ -441,7 +441,20 @@ class MarketSearcher
     #   ap selected_recipe
     # end
 
-    return if selected_recipe.nil?
+    return nil if selected_recipe.nil?
+
+    # remove recipes where one ingredient is used twice
+    # this usually happens because of incorrect substitution being
+    # found from bdocodex. or maybe they're not incorrect, and there
+    # are some seriously mysterious alchemy recipes out there...
+    ingredients_already_appeared = []
+    filtered_selected_recipe = selected_recipe.filter do |ingredient|
+      return false if ingredients_already_appeared.include? ingredient[:name]
+      ingredients_already_appeared.push(ingredient[:name])
+      true
+    end
+
+    return nil if filtered_selected_recipe.length != selected_recipe.length
 
     total_ingredient_cost = (selected_recipe.map { |ing| ing[:price_per_one] }.sum / average_procs).floor
     total_ingredient_stock = selected_recipe.filter { |ing| !ing[:is_npc_item] }.map { |ing| ing[:total_in_stock] }.sum
@@ -484,9 +497,9 @@ class MarketSearcher
 
       # TODO: allow the user to configure if the tool should show them
       # out of stock / unprofitable recipes
-      return if raw_profit_before_procs.zero?
-      return if any_ingredient_out
-      return if total_ingredient_stock < 10
+      return nil if raw_profit_before_procs.zero?
+      return nil if any_ingredient_out
+      return nil if total_ingredient_stock < 10
 
       max_potion_count = selected_recipe.map { |ing| ing[:total_in_stock] == Float::INFINITY ? Float::INFINITY : (ing[:total_in_stock] / ing[:quant]).floor }.min
 
@@ -498,7 +511,7 @@ class MarketSearcher
       # important - the untaxed sell price of the maximum amount of this
       # recipe
       # @type [Integer]
-      raw_max_market_sell_price = max_potion_count * item_market_sell_price
+      raw_max_market_sell_price = (max_potion_count * item_market_sell_price) * average_procs
 
       # taxed profit on selling one of this this recipe, with
       # average procs accounted for
@@ -557,14 +570,22 @@ class MarketSearcher
         stock_counts.push "#{formatted_potion_amount.ljust(4, ' ')} [max: #{formatted_max_potion_amount}] #{@cli.yellow "#{ingredient[:name].downcase}: #{formatted_stock_count}"} in stock#{formatted_npc_information}. price: #{formatted_price} [for max: #{formatted_max_price}]"
       end
 
+      market_stock_string = item[:total_in_stock] > 5000 ? @cli.red(PriceCalculator.format_num(item[:total_in_stock])) : @cli.green(PriceCalculator.format_num(item[:total_in_stock]))
+
+      trade_count_string = item[:total_trade_count] < 1000000 ? @cli.red(PriceCalculator.format_num(item[:total_trade_count])) : @cli.green(PriceCalculator.format_num(item[:total_trade_count]))
+
+      calculated_time = max_potion_count * 1.2
+      crafting_time_string = calculated_time > 21600 ? @cli.red((seconds_to_str(calculated_time))) : @cli.green((seconds_to_str(calculated_time)))
+
       information = "    #{@cli.yellow "[#{item[:id]}] [#{item[:name].downcase}], recipe id: #{selected_recipe[0][:for_recipe_id]}"}
 
     #{padstr("market price of item")}#{@cli.yellow PriceCalculator.format_price item_market_sell_price}
-    #{padstr("market stock of item")}#{@cli.yellow PriceCalculator.format_num item[:total_in_stock]}
-    #{padstr("total trades of item")}#{@cli.yellow PriceCalculator.format_num item[:total_trade_count]}
+    #{padstr("market stock of item")}#{market_stock_string}
+    #{padstr("total trades of item")}#{trade_count_string}
     #{padstr("max amount you can create")}#{@cli.yellow PriceCalculator.format_num max_potion_count}
     #{padstr("cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_ingredient_cost} (accounting for average #{average_procs} / craft)
     #{padstr("max cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_max_ingredient_cost} (accounting for average #{average_procs} / craft)
+    #{padstr("time to craft max")}#{crafting_time_string} (accounting for average 1.2s / craft - typical server delay)
 
 \t#{stock_counts.join "\n\t"}
 
@@ -575,6 +596,11 @@ class MarketSearcher
 "
       { information: information, max_profit: max_taxed_sell_profit_after_procs }
     end
+  end
+
+  def seconds_to_str(seconds)
+    ["#{(seconds / 3600).floor}h", "#{(seconds / 60 % 60).floor}m", "#{(seconds % 60).floor}s"]
+      .select { |str| str =~ /[1-9]/ }.join(" ")
   end
 
   def padstr(str, space_around = ' ', len = 32, pad_with = '.')
