@@ -88,7 +88,7 @@ class BDOAlchemyProfits
       puts "\n\n"
       puts mapped_prices
     else
-      cli.vipiko("none of those recipes look profitable right now...let's go gathering!")
+      cli.vipiko_overwrite "none of those recipes look profitable right now...let's go gathering!"
     end
   end
 end
