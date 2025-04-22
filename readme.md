@@ -1,5 +1,7 @@
 # bdo (market) alchemy profit tool
 
+[![gem version](https://badge.fury.io/rb/bdoap.svg)](https://badge.fury.io/rb/bdoap)
+
 ## contents
 - [how to use](#how-to-use)
 - [standalone executable (outdated)](#standalone-executable-outdated)
