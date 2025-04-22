@@ -218,7 +218,7 @@ class BDOCodexSearcher
     recipes = []
 
     # newline because vipiko is about to start carriage returning
-    puts
+    puts "\n"
     item_list.each.with_index do |item_hash, index|
       item = item_hash.transform_keys { |key|
         key.gsub(/(.)([A-Z])/,'\1_\2').downcase.to_sym

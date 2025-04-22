@@ -11,3 +11,5 @@ gem 'rake'
 gem 'rubocop'
 gem 'tty-prompt'
 gem 'awesome_print'
+
+gemspec

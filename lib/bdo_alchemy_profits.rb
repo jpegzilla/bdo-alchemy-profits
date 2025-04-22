@@ -1,4 +1,27 @@
+#!/usr/bin/env ruby
 # frozen_string_literal: true
+
+# MIT License
+#
+# Copyright (c) 2025 jpegzilla
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 require 'optparse'
 
@@ -48,7 +71,7 @@ class BDOAlchemyProfits
 
     market_item_list = market_searcher.get_alchemy_market_data category
 
-    cli.vipiko("\nI'll look for #{cli.yellow(market_item_list.length)} item#{
+    cli.vipiko("I'll look for #{cli.yellow(market_item_list.length)} item#{
       market_item_list.empty? || market_item_list.length > 1 ? 's' : ''
     } in #{category == 'all' ? cli.yellow('all categories'): "the #{cli.yellow category} category"}!")
 
@@ -60,6 +83,12 @@ class BDOAlchemyProfits
 
     mapped_prices = recipe_prices.sort_by { |recipe| recipe[:silver_per_hour].to_i }.map { |recipe| recipe[:information] }
 
-    puts mapped_prices
+    if mapped_prices.length > 0
+      cli.vipiko_overwrite "done!"
+      puts "\n\n"
+      puts mapped_prices
+    else
+      cli.vipiko("none of those recipes look profitable right now...let's go gathering!")
+    end
   end
 end

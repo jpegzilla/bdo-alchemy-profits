@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Utils
+  # log recipe information
   class RecipeLogger
     def initialize(cli)
       @cli = cli
@@ -51,8 +52,8 @@ module Utils
       #{padstr("market price of item")}#{@cli.yellow PriceCalculator.format_price item_market_sell_price}
       #{padstr("market stock of item")}#{market_stock_string}
       #{padstr("total trades of item")}#{trade_count_string}
-      #{padstr("max times you can craft this")}#{@cli.yellow PriceCalculator.format_num max_potion_count}
-      #{padstr("theoretical max amount of output")}#{@cli.yellow PriceCalculator.format_num(max_potion_count * average_procs)}
+      #{padstr("you can craft")}#{@cli.yellow PriceCalculator.format_num max_potion_count}
+      #{padstr("theoretical max output")}#{@cli.yellow PriceCalculator.format_num(max_potion_count * average_procs)}
       #{padstr("cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_ingredient_cost} (accounting for average #{average_procs} / craft)
       #{padstr("max cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_max_ingredient_cost} (accounting for average #{average_procs} / craft)
       #{padstr("time to craft max")}#{crafting_time_string} (accounting for average #{estimated_craft_time}s / craft due to typical server delay)
@@ -63,7 +64,6 @@ module Utils
       #{padstr("total taxed silver per hour")}#{@cli.green PriceCalculator.format_price(silver_per_hour) } silver / hour
       #{padstr("total untaxed profit")}#{@cli.green PriceCalculator.format_price raw_profit_with_procs} [max: #{@cli.green PriceCalculator.format_price(raw_profit_with_procs * max_potion_count)}]
       #{padstr("total taxed profit")}#{@cli.green PriceCalculator.format_price taxed_sell_profit_after_procs} [max: #{@cli.green PriceCalculator.format_price(max_taxed_sell_profit_after_procs)}]
-
   "
       { recipe_info: information, silver_per_hour: silver_per_hour }
     end

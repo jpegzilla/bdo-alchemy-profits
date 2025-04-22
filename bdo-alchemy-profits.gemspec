@@ -1,26 +1,24 @@
 # frozen_string_literal: true
 
-Gem::Specification.new do |s|
-  s.name = 'bdoap'
-  s.license = 'MIT',
-  s.version = '0.0.1'
-  s.date = '2025-04-21'
-  s.summary = 'this is a tool used to aggregate price and profit data for black desert alchemists.'
-  s.description = 'this script allows you to find alchemy recipes from bdocodex.com, compare them with live central market prices, and use that information to determine what alchemy recipes are currently profitable.'
+Gem::Specification.new do |spec|
+  spec.name = 'bdoap'
+  spec.version = '0.0.1'
+  spec.date = '2025-04-21'
+  spec.summary = 'this is a tool used to aggregate price and profit data for black desert alchemists.'
+  spec.description = 'this script allows you to find alchemy recipes from bdocodex.com, compare them with live central market prices, and use that information to determine what alchemy recipes are currently profitable.'
 
-  s.authors = ['jpegzilla']
-  s.email = 'eris@jpegzilla.com'
+  spec.authors = ['jpegzilla']
+  spec.email = 'eris@jpegzilla.com'
 
-  s.homepage = 'https://github.com/jpegzilla/bdo-alchemy-profits'
-  s.metadata["homepage_uri"] = s.homepage
-  s.metadata["source_code_uri"] = s.homepage
+  spec.homepage = 'https://github.com/jpegzilla/bdo-alchemy-profits'
+  spec.license = 'MIT'
 
 
-  s.required_ruby_version = ">= 3.1.0"
-  s.bindir = 'bin'
-  s.files = Dir['{lib}/**/*.rb', 'bin/*', 'LICENSE', '*.md']
-  s.require_paths = ["lib"]
+  spec.required_ruby_version = ">= 3.1.0"
+  spec.files = Dir['{lib,bin}/**/**']
+  spec.require_paths = ['lib']
+  spec.executables << 'bdoap'
 
-  s.add_development_dependency "bundler", "~> 2.6"
-  s.add_development_dependency "rake", "~> 13.2"
+  spec.add_development_dependency "bundler", "~> 2.6"
+  spec.add_development_dependency "rake", "~> 13.2"
 end

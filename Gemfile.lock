@@ -1,3 +1,8 @@
+PATH
+  remote: .
+  specs:
+    bdoap (0.0.1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -81,6 +86,8 @@ PLATFORMS
 DEPENDENCIES
   async
   awesome_print
+  bdoap!
+  bundler (~> 2.6)
   httparty
   json
   nokogiri

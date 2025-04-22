@@ -60,11 +60,8 @@ class MarketSearcher
     # TODO: this is probably not a smart way to do this type of retry logic
     puts
     mapped_aggregate = filtered_aggregate.map.with_index do |elem, index|
-      # cached_item = @market_cache.read elem['mainKey']
 
       @cli.vipiko_overwrite "(#{index + 1} / #{filtered_aggregate.length})  researching #{@cli.yellow elem['name'].downcase}... (category: #{subcategory})"
-
-      # return cached_item unless cached_item.nil?
 
       begin
         get_price_data elem
@@ -85,7 +82,8 @@ class MarketSearcher
       end
     end.filter { |item| !item&.nil? && !item&.dig('pricePerOne').nil? }
 
-    puts
+    puts "\n\n" unless mapped_aggregate.empty?
+
     mapped_aggregate.sort do |a, b|
       b['pricePerOne'] - a['pricePerOne']
     end
@@ -100,7 +98,6 @@ class MarketSearcher
       }
     end
 
-    # aggregate_response = {}
     aggregate_response = []
 
     category_search_options(url, search_url).each do |category_opts|
@@ -282,10 +279,6 @@ class MarketSearcher
       mapped_recipe_prices.push map_recipe_prices(potential_recipes, item_with_recipe, subcategory)
     end
 
-    @cli.vipiko_overwrite "done!"
-
-    puts "\n\n"
-
     mapped_recipe_prices.filter { |e| !e.nil? && !!e }
   end
 
@@ -318,20 +311,10 @@ class MarketSearcher
         end
       end
     end
-    # if item[:name].to_s.downcase == 'clear liquid reagent'
-    #   print 'filtered_recipes: ', filtered_recipes
-    #   puts
-    # end
 
     selected_recipe = filtered_recipes.sort_by do |recipe|
       recipe.map { |ingredient| mapper ingredient }.sum
     end[0]
-
-    # if item[:name].to_s.downcase == 'clear liquid reagent'
-    #   print 'selected_recipe: '
-    #   puts
-    #   ap selected_recipe
-    # end
 
     return nil if selected_recipe.nil?
 
@@ -365,34 +348,16 @@ class MarketSearcher
       content_type: 'application/x-www-form-urlencoded'
     )
 
-    # if item[:name].to_s.downcase == 'clear liquid reagent'
-    #   puts 'item price data: '
-    #   puts
-    #   ap item_price_data
-    # end
-
     # assuming we were able to find the item price list
     if item_price_data&.dig('marketConditionList')
       item_market_sell_price = item_price_data['marketConditionList']&.last&.dig('pricePerOne').to_i
       raw_profit_with_procs = (item_market_sell_price - total_ingredient_cost) * average_procs
       raw_profit_before_procs = item_market_sell_price - total_ingredient_cost
 
-      # if item[:name].to_s.downcase == 'clear liquid reagent'
-      #   puts 'other information that could cause omission: '
-      #   puts
-      #   print 'raw_profit_before_procs: ', raw_profit_before_procs
-      #   puts
-      #   print 'item_market_sell_price: ', item_market_sell_price
-      #   puts
-      #   print 'total_ingredient_cost: ', total_ingredient_cost
-      #   puts
-      #   print 'total_ingredient_stock: ', total_ingredient_stock
-      #   puts
-      #   ap item_price_data
-      # end
+      # TODO: allow the user to configure if the tool should show them. this would require some alteration
+      # to the output logger formatting
 
-      # TODO: allow the user to configure if the tool should show them
-      # out of stock / unprofitable recipes
+      # skip out of stock / unprofitable recipes
       return nil if raw_profit_before_procs.zero?
       return nil if any_ingredient_out
       return nil if total_ingredient_stock < 10

@@ -2,6 +2,8 @@
 
 require 'date'
 
+$request_verification_token = '__RequestVerificationToken=0q_pyZ8OMkALLxxv_pj6ty10hXKTDq3Sl_1NAbV5WYhUAbNvcurT6GwSUDmBRnaZVyEmd0lcTlR3I6X7_cXkAwH-nGQG_G2E6MQZPNcfNd41' # rubocop:disable Layout/LineLength
+
 module Utils
   # constants to use when user is configuring the tool
   class CLIConstants
@@ -65,6 +67,10 @@ module Utils
       hyperaggressive: 'evaluate every substitution for every recipe',
       exit: 'stops the search'
     }.freeze
+
+    def self.set_rvt(rvt)
+      $request_verification_token = rvt
+    end
   end
 
   # constants that will be used in by search / scraping scripts
@@ -72,9 +78,8 @@ module Utils
     MARKET_CACHE = './market_cache'
     BDO_CODEX_CACHE = './bdo_codex_cache'
     ERROR_LOG = './error.log'
-    COOKIE =
-      '__RequestVerificationToken=0q_pyZ8OMkALLxxv_pj6ty10hXKTDq3Sl_1NAbV5WYhUAbNvcurT6GwSUDmBRnaZVyEmd0lcTlR3I6X7_cXkAwH-nGQG_G2E6MQZPNcfNd41' # rubocop:disable Layout/LineLength
-    RVT = '__RequestVerificationToken=MGf54RSTVQkYrPo4Dvaf9IOuSilYwQIzWfdBI4PhFrV1l1o_e0BRmf78J6I7pVn_gcqj5DAv-G3MfFiWoUqFE3R62-Kxdcm4CgkRGd7oq7Y1' # rubocop:disable Layout/LineLength
+    COOKIE = $request_verification_token
+    RVT = $request_verification_token
     WORLD_MARKET_LIST = '/GetWorldMarketList'
     MARKET_SUB_LIST = '/GetWorldMarketSubList'
     MARKET_SEARCH_LIST = '/GetWorldMarketSearchList'
