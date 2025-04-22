@@ -2,7 +2,7 @@
 
 require 'date'
 
-$request_verification_token = '__RequestVerificationToken=0q_pyZ8OMkALLxxv_pj6ty10hXKTDq3Sl_1NAbV5WYhUAbNvcurT6GwSUDmBRnaZVyEmd0lcTlR3I6X7_cXkAwH-nGQG_G2E6MQZPNcfNd41' # rubocop:disable Layout/LineLength
+$request_verification_token = '__RequestVerificationToken=aVYGQPovG8EI6bRIagh8tbHJUhZlM-nH3UKVQaV9R9N0vODzmWcB747BHEsHaphwANvzsaNi5TCPlB-72-e1LadqAlL-bdkDkTqVh4gMnu81' # rubocop:disable Layout/LineLength
 
 module Utils
   # constants to use when user is configuring the tool
@@ -78,8 +78,10 @@ module Utils
     MARKET_CACHE = './market_cache'
     BDO_CODEX_CACHE = './bdo_codex_cache'
     ERROR_LOG = './error.log'
-    COOKIE = $request_verification_token
-    RVT = $request_verification_token
+    # note that the following two tokens are different!! the first one is from a request cookie
+    # the second is from the dom of the actual BDO central market interface
+    COOKIE = '__RequestVerificationToken=aVYGQPovG8EI6bRIagh8tbHJUhZlM-nH3UKVQaV9R9N0vODzmWcB747BHEsHaphwANvzsaNi5TCPlB-72-e1LadqAlL-bdkDkTqVh4gMnu81' # rubocop:disable Layout/LineLength
+    RVT = '__RequestVerificationToken=yWbqJmiU4wcp2IRQGkbDfqMFs2fjCYx4UqVxg4umK8CvdbLhweMLZ1es-4SFWD8J1UfoqwbaQyo_YuzAkSzHWY8Wjyx4ttwZBvtu_pd--9U1' # rubocop:disable Layout/LineLength
     WORLD_MARKET_LIST = '/GetWorldMarketList'
     MARKET_SUB_LIST = '/GetWorldMarketSubList'
     MARKET_SEARCH_LIST = '/GetWorldMarketSearchList'
@@ -94,6 +96,7 @@ module Utils
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
         Cookie: COOKIE,
         Dnt: '1',
+        'x-cdn': 'Imperva'
       },
       bdo_codex_headers: {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',

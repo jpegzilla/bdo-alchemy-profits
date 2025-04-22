@@ -105,14 +105,13 @@ class MarketSearcher
         begin
           data = HTTParty.post(
             URI(category_opts[:url]),
-            headers: ENVData::REQUEST_OPTS[:central_market_headers],
+            headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
             body: category_opts[:query_string],
             content_type: 'application/x-www-form-urlencoded'
           )
 
           sleep 1
 
-          # aggregate_response = { **aggregate_response, **category_opts[:update].call(data) } if data
           aggregate_response.push category_opts[:update].call(data) if data
         rescue StandardError => error
           puts @cli.red("this could be a network failure. aggregate_category_data broke.")
@@ -343,7 +342,7 @@ class MarketSearcher
 
     item_price_data = HTTParty.post(
       URI(@market_sell_buy_url),
-      headers: ENVData::REQUEST_OPTS[:central_market_headers],
+      headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
       body: body_string,
       content_type: 'application/x-www-form-urlencoded'
     )
