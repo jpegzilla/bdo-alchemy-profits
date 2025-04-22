@@ -47,3 +47,11 @@ task dev: [:check_deps] do
   puts
   system 'nodemon main.rb --development'
 end
+
+desc 'package gem'
+task pack: [:check_deps] do
+  puts
+  puts 'building gem...'
+  puts
+  system 'gem build bdoap.gemspec'
+end

@@ -1,8 +1,17 @@
 # bdo (market) alchemy profit tool
 
+## contents
+- [how to use](#how-to-use)
+- [standalone executable (outdated)](#standalone-executable-outdated)
+- [todo](#todo)
+
+---
+
 this is a tool that searches the central market for potions and other items that you can make profit on just by buying all the ingredients and selling the result.
 
-it assumes you have high enough alchemy mastery (artisan 1) for max procs on recipes that are affected, such as bloods and elixirs.
+it assumes
+- you have high enough alchemy mastery (artisan 1) for max procs on recipes that are affected, such as bloods and elixirs.
+- you have minimum alchemy time (1s)
 
 ![an example readout from the script](screenshots/new_example_one.png)
 

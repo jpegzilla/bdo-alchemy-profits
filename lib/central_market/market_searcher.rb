@@ -3,112 +3,17 @@
 require 'httparty'
 require 'json'
 
-require_relative '../../utils/cli_utils/constants'
-require_relative '../../utils/hash_cache'
-require_relative '../../utils/npc_item_index'
-require_relative '../../utils/price_calculator'
-
-CONSUMABLE_CATEGORY = 35
-CONSUMABLE_SUBCATEGORIES = {
-  offensive: 1,
-  defensive: 2,
-  functional: 3,
-  potion: 5,
-  other: 8,
-  all: [1, 2, 3, 5, 8]
-}.freeze
-
-# get information used for searching specific categories
-def category_search_options(url, search_url) # rubocop:disable Metrics/AbcSize
-  # TODO: there's probably a smart / concise way to construct this array
-  [
-    {
-      name: 'black stone',
-      url: url,
-      query_string: "#{ENVData::RVT}&mainCategory=30&subCategory=1",
-      # update: ->(data) { { blackStoneResponse: data['list'] } },
-      update: ->(data) { data['list'] }
-    },
-    {
-      name: 'blood',
-      url: search_url,
-      query_string: "#{ENVData::RVT}&searchText='s+blood",
-      # update: ->(data) { { bloodResponse: data['list'] } },
-      update: ->(data) { data['list'] }
-    },
-    {
-      name: 'reagent',
-      url: search_url,
-      query_string: "#{ENVData::RVT}&searchText=reagent",
-      # update: ->(data) { { reagentResponse: data['list'] } },
-      update: ->(data) { data['list'] }
-    },
-    {
-      name: 'oil',
-      url: search_url,
-      query_string: "#{ENVData::RVT}&searchText=oil+of",
-      # update: ->(data) { { oilResponse: data['list'] } },
-      update: ->(data) { data['list'] }
-    },
-    {
-      name: 'alchemy stone',
-      url: search_url,
-      query_string: "#{ENVData::RVT}&searchText=stone+of",
-      # update: ->(data) { { alchemyStoneResponse: data['list'] } },
-      update: ->(data) { data['list'].filter { |i| i['grade'] == 0 } }
-    },
-    {
-      name: 'magic crystal',
-      url: search_url,
-      query_string: "#{ENVData::RVT}&searchText=magic+crystal",
-      # update: ->(data) { { magicCrystalResponse: data['list'] } },
-      update: ->(data) { data['list'] }
-    },
-    {
-      name: 'offensive',
-      url: url,
-      query_string:
-        "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:offensive]}",
-      # update: ->(data) { { offensiveResponse: data['marketList'] } },
-      update: ->(data) { data['marketList'] }
-    },
-    {
-      name: 'defensive',
-      url: url,
-      query_string:
-        "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:defensive]}",
-      # update: ->(data) { { defensiveResponse: data['marketList'] } },
-      update: ->(data) { data['marketList'] }
-    },
-    {
-      name: 'functional',
-      url: url,
-      query_string:
-            "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:functional]}",
-      # update: ->(data) { { functionalResponse: data['marketList'] } },
-      update: ->(data) { data['marketList'] }
-    },
-    {
-      name: 'potion',
-      url: url,
-      query_string:
-        "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:potion]}",
-      # update: ->(data) { { potionResponse: data['marketList'] } },
-      update: ->(data) { data['marketList'] }
-    },
-    {
-      name: 'other',
-      url: url,
-      query_string:
-        "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:other]}",
-      # update: ->(data) { { otherResponse: data['marketList'] } },
-      update: ->(data) { data['marketList'] }
-    }
-  ]
-end
+require_relative '../utils/constants'
+require_relative '../utils/price_calculator'
+require_relative '../utils/recipe_logger'
+require_relative '../utils/npc_item_index'
+require_relative './category_search_options'
 
 # search for information on recipes in given categories
 class MarketSearcher
+  include Utils
+  include MarketSearchTools
+
   def initialize(region, cli)
     @root_url = ENVData.get_root_url region
     @region_subdomain = CLIConstants::REGION_DOMAINS[region.to_sym].split('.')[1..].join('.')
@@ -116,11 +21,8 @@ class MarketSearcher
     @market_search_url = "#{@root_url}#{ENVData::MARKET_SEARCH_LIST}"
     @market_sub_url = "#{@root_url}#{ENVData::MARKET_SUB_LIST}"
     @market_sell_buy_url = "#{@root_url}#{ENVData::MARKET_SELL_BUY_INFO}"
-    # @market_cache = HashCache.new ENVData::MARKET_CACHE
-    @bdo_codex_cache = HashCache.new ENVData::BDO_CODEX_CACHE
     @cli = cli
     @ingredient_cache = {}
-    @out_of_stock_items = []
   end
 
   def get_alchemy_market_data(category)
@@ -167,7 +69,7 @@ class MarketSearcher
       begin
         get_price_data elem
       rescue
-        sleep 10
+        sleep 2
         begin
           get_price_data elem
         rescue StandardError => error
@@ -279,7 +181,7 @@ class MarketSearcher
             puts @cli.red("this could be a network failure. get_item_price_info broke.")
 
             File.open(ENVData::ERROR_LOG, 'a+') do |file|
-              file.write(error.full_message)
+              file.write(error&.full_message || error)
               file.write("\n\r")
               detailed_price_list = {}
             end
@@ -341,7 +243,7 @@ class MarketSearcher
           }
 
           if item_price_info[:count].zero? && rand > 0.5
-            @out_of_stock_items.push(item_price_info[:name].downcase)
+            out_of_stock_items.push(item_price_info[:name].downcase)
           end
 
           stock_count = get_stock_count item_price_info
@@ -356,7 +258,7 @@ class MarketSearcher
             name: item_price_info[:name],
             price: price_per_one,
             id: item_price_info[:main_key],
-            total_trade_count: item_price_info[:total_trade_count].to_i.zero? ? 'not available' : item_price_info[:total_trade_count],
+            total_trade_count: item_price_info[:total_trade_count].to_i,
             total_in_stock: stock_count,
             main_category: item_price_info[:main_category],
             sub_category: item_price_info[:sub_category],
@@ -398,23 +300,12 @@ class MarketSearcher
       if category == 'reagent' || /reagent/.match(item[:name].downcase)
         average_procs = 3
       end
-    end
 
-    # if item[:name].to_s.downcase == 'clear liquid reagent'
-    #   puts
-    #   pp "ITEM"
-    #   puts
-    #   ap item
-    #   puts
-    #   pp "potential RECIPES"
-    #   ap potential_recipes
-    #   puts
-    #   puts item[:name]
-    #   puts
-    #   print 'average_procs: ', average_procs
-    #   puts
-    #   puts
-    # end
+      # harmony draught recipe produces 10
+      if item[:id].to_s == '1399'
+        average_procs = 10
+      end
+    end
 
     filtered_recipes = potential_recipes.filter do |recipe|
       recipe.all? do |ingredient|
@@ -435,6 +326,7 @@ class MarketSearcher
     selected_recipe = filtered_recipes.sort_by do |recipe|
       recipe.map { |ingredient| mapper ingredient }.sum
     end[0]
+
     # if item[:name].to_s.downcase == 'clear liquid reagent'
     #   print 'selected_recipe: '
     #   puts
@@ -443,12 +335,16 @@ class MarketSearcher
 
     return nil if selected_recipe.nil?
 
+    average_procs = 1 if selected_recipe.find { |a| a[:name].downcase == 'blue reagent' } != nil
+
     # remove recipes where one ingredient is used twice
     # this usually happens because of incorrect substitution being
     # found from bdocodex. or maybe they're not incorrect, and there
     # are some seriously mysterious alchemy recipes out there...
     ingredients_already_appeared = []
     filtered_selected_recipe = selected_recipe.filter do |ingredient|
+      # set procs to 1 if blue reagent required
+      average_procs = 1 if ingredient[:name].downcase == 'blue reagent'
       return false if ingredients_already_appeared.include? ingredient[:name]
       ingredients_already_appeared.push(ingredient[:name])
       true
@@ -456,7 +352,7 @@ class MarketSearcher
 
     return nil if filtered_selected_recipe.length != selected_recipe.length
 
-    total_ingredient_cost = (selected_recipe.map { |ing| ing[:price_per_one] }.sum / average_procs).floor
+    total_ingredient_cost = (selected_recipe.map { |ing| ing[:price] * ing[:quant] }.sum / average_procs).floor
     total_ingredient_stock = selected_recipe.filter { |ing| !ing[:is_npc_item] }.map { |ing| ing[:total_in_stock] }.sum
     any_ingredient_out = selected_recipe.any? { |ing| ing[:total_in_stock].zero? || ing[:total_in_stock] < ing[:quant] }
 
@@ -521,91 +417,16 @@ class MarketSearcher
       # taxed profit on selling max amount of this this recipe, with
       # average procs accounted for
       # @type [Integer]
+      #
       max_taxed_sell_profit_after_procs = (PriceCalculator.calculate_taxed_price(item_market_sell_price * max_potion_count) - total_max_ingredient_cost) * average_procs
 
-      return if max_taxed_sell_profit_after_procs.to_i <= 0
+      return nil if max_taxed_sell_profit_after_procs.to_s.downcase == 'nan'
+      return nil if max_taxed_sell_profit_after_procs < 0
 
-      # if item[:name].to_s.downcase == 'clear liquid reagent'
-      #   puts
-      #   pp "ITEM"
-      #   puts
-      #   ap item
-      #   puts
-      #   pp "RECIPE"
-      #   puts
-      #   ap selected_recipe
-      #   puts
-      #   puts item[:name]
-      #   print 'total_max_ingredient_cost: ', total_max_ingredient_cost
-      #   puts
-      #   print 'item_market_sell_price: ', item_market_sell_price
-      #   puts
-      #   print 'max_potion_count: ', max_potion_count
-      #   puts
-      #   print 'average_procs: ', average_procs
-      #   puts
-      #   print 'total_ingredient_cost: ', total_ingredient_cost
-      #   puts
-      #   puts
-      # end
-
-      stock_counts = []
-      # TODO: holy fuck extract some of this
-      # at least this entire loop
-      # remember, @cli.vipiko has to say this for colors to work
-      selected_recipe.each do |ingredient|
-        amount_required_for_max_potions = max_potion_count * ingredient[:quant]
-        ingredient_market_sell_price = ingredient[:price].to_i
-
-        next if (amount_required_for_max_potions * ingredient_market_sell_price) < 0
-
-        raw_max_ingredient_sell_price = ingredient[:price] * max_potion_count
-        formatted_price = @cli.yellow PriceCalculator.format_price ingredient_market_sell_price
-        formatted_max_price = @cli.yellow PriceCalculator.format_price raw_max_ingredient_sell_price
-        formatted_potion_amount = @cli.yellow PriceCalculator.format_num ingredient[:quant]
-        formatted_max_potion_amount = @cli.yellow PriceCalculator.format_num max_potion_count
-        formatted_stock_count = @cli.yellow PriceCalculator.format_num ingredient[:total_in_stock]
-        formatted_npc_information = ingredient[:is_npc_item] ? @cli.yellow(" (sold by #{ingredient[:npc_type]} npcs)") : ''
-
-        stock_counts.push "#{formatted_potion_amount.ljust(4, ' ')} [max: #{formatted_max_potion_amount}] #{@cli.yellow "#{ingredient[:name].downcase}: #{formatted_stock_count}"} in stock#{formatted_npc_information}. price: #{formatted_price} [for max: #{formatted_max_price}]"
-      end
-
-      market_stock_string = item[:total_in_stock] > 5000 ? @cli.red(PriceCalculator.format_num(item[:total_in_stock])) : @cli.green(PriceCalculator.format_num(item[:total_in_stock]))
-
-      trade_count_string = item[:total_trade_count] < 1000000 ? @cli.red(PriceCalculator.format_num(item[:total_trade_count])) : @cli.green(PriceCalculator.format_num(item[:total_trade_count]))
-
-      calculated_time = max_potion_count * 1.2
-      crafting_time_string = calculated_time > 21600 ? @cli.red((seconds_to_str(calculated_time))) : @cli.green((seconds_to_str(calculated_time)))
-
-      information = "    #{@cli.yellow "[#{item[:id]}] [#{item[:name].downcase}], recipe id: #{selected_recipe[0][:for_recipe_id]}"}
-
-    #{padstr("market price of item")}#{@cli.yellow PriceCalculator.format_price item_market_sell_price}
-    #{padstr("market stock of item")}#{market_stock_string}
-    #{padstr("total trades of item")}#{trade_count_string}
-    #{padstr("max amount you can create")}#{@cli.yellow PriceCalculator.format_num max_potion_count}
-    #{padstr("cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_ingredient_cost} (accounting for average #{average_procs} / craft)
-    #{padstr("max cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_max_ingredient_cost} (accounting for average #{average_procs} / craft)
-    #{padstr("time to craft max")}#{crafting_time_string} (accounting for average 1.2s / craft - typical server delay)
-
-\t#{stock_counts.join "\n\t"}
-
-    total income for max items before cost subtraction #{@cli.green PriceCalculator.format_price raw_max_market_sell_price}
-    #{padstr("total untaxed profit")}#{@cli.green PriceCalculator.format_price raw_profit_with_procs} [max: #{@cli.green PriceCalculator.format_price(raw_profit_with_procs * max_potion_count)}]
-    #{padstr("total taxed profit")}#{@cli.green PriceCalculator.format_price taxed_sell_profit_after_procs} [max: #{@cli.green PriceCalculator.format_price(max_taxed_sell_profit_after_procs)}]
-
-"
-      { information: information, max_profit: max_taxed_sell_profit_after_procs }
+      recipe_logger = RecipeLogger.new @cli
+      results = recipe_logger.log_recipe_data(item, selected_recipe, max_potion_count, item_market_sell_price, total_ingredient_cost, average_procs, total_max_ingredient_cost, raw_max_market_sell_price, max_taxed_sell_profit_after_procs, raw_profit_with_procs, taxed_sell_profit_after_procs)
+      { information: results[:recipe_info], max_profit: max_taxed_sell_profit_after_procs, silver_per_hour: results[:silver_per_hour] }
     end
-  end
-
-  def seconds_to_str(seconds)
-    ["#{(seconds / 3600).floor}h", "#{(seconds / 60 % 60).floor}m", "#{(seconds % 60).floor}s"]
-      .select { |str| str =~ /[1-9]/ }.join(" ")
-  end
-
-  def padstr(str, space_around = ' ', len = 32, pad_with = '.')
-    padded = "#{str}#{space_around}"
-    "#{padded.ljust(len, pad_with)}#{space_around}"
   end
 
   def mapper(item)

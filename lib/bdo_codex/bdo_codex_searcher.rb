@@ -5,9 +5,9 @@ require 'httparty'
 require 'nokogiri'
 require 'awesome_print'
 
-require_relative '../../utils/cli_utils/user_cli'
-require_relative '../../utils/array_utils'
-require_relative '../../utils/hash_cache'
+require_relative '../utils/user_cli'
+require_relative '../utils/array_utils'
+require_relative '../utils/hash_cache'
 
 # some variables that are necessary for parsing bdocodex data
 class BDO_CODEX_UTILS
@@ -28,6 +28,8 @@ end
 
 # used to retrieve items from BDOCodex
 class BDOCodexSearcher
+  include Utils
+
   RECIPE_INGREDIENTS_INDEX = 2
 
   def initialize(region, lang, cli, hyper_aggressive = false)
@@ -156,12 +158,20 @@ class BDOCodexSearcher
     begin
       direct_data = get_recipe_url recipe_direct_url
 
-      if !direct_data
+      if !direct_data || direct_data.empty?
         mrecipe_data = get_recipe_url mrecipe_direct_url
 
         return parse_raw_recipe mrecipe_data, item_name
       else
-        return parse_raw_recipe direct_data, item_name
+        parsed = parse_raw_recipe direct_data, item_name
+
+        if !parsed || parsed.empty?
+          mrecipe_data = get_recipe_url mrecipe_direct_url
+
+          return parse_raw_recipe mrecipe_data, item_name
+        end
+
+        parsed
       end
     rescue StandardError => error
       puts @cli.red("if you're not messing with the code, you should never see this. get_item_recipes broke.")
@@ -178,6 +188,8 @@ class BDOCodexSearcher
   # m_recipes_first may be useful if a lot of recipes aren't working
   # refer to the original javascript implementation of
   # searchCodexForRecipes
+  # m_recipes_first should be used to hit the /mrecipe version of a recipe
+  # for manufacturing-type recipes
   def search_codex_for_recipes(item, m_recipes_first)
     item_id = item[:main_key]
     item_name = item[:name]
@@ -186,7 +198,7 @@ class BDOCodexSearcher
     cache_data = {}
 
     # TODO: remove this check
-    # return unless item_name.downcase == 'clear liquid reagent'
+    # return unless item_name.downcase == 'harmony draught'
 
     unless potential_cached_recipes.to_a.empty?
       recipe_to_maybe_select = potential_cached_recipes.filter { |elem| elem[1].downcase == item_name.downcase }
@@ -232,8 +244,8 @@ class BDOCodexSearcher
             recipe_list: all_recipes_for_item,
             price: item[:price_per_one],
             id: item[:main_key],
-            total_trade_count: item[:total_trade_count].zero? ? 'not available' : item[:total_trade_count],
-            total_in_stock: stock_count.zero? ? 'not available' : stock_count,
+            total_trade_count: item[:total_trade_count],
+            total_in_stock: stock_count,
             main_category: item[:main_category],
             sub_category: item[:sub_category]
           }
