@@ -41,7 +41,7 @@ good luck!
 
 ### gem
 
-I made a gem out of this called [bdoap](). if you have [ruby](https://www.ruby-lang.org/en/) 3.1 installed then you're ready to go. just run `gem install bdoap`. then, run `bdoap` or `gem exec bdoap`.
+I made a gem out of this called [bdoap](https://rubygems.org/gems/bdoap). if you have [ruby](https://www.ruby-lang.org/en/) 3.1 installed then you're ready to go. just run `gem install bdoap`. then, run `bdoap` or `gem exec bdoap`.
 
 ### source code
 

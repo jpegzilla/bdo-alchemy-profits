@@ -61,7 +61,7 @@ class MarketSearcher
     puts
     mapped_aggregate = filtered_aggregate.map.with_index do |elem, index|
 
-      @cli.vipiko_overwrite "(#{index + 1} / #{filtered_aggregate.length})  researching #{@cli.yellow elem['name'].downcase}... (category: #{subcategory})"
+      @cli.vipiko_overwrite "(#{index + 1} / #{filtered_aggregate.length}) researching #{@cli.yellow elem['name'].downcase}... (category: #{subcategory})"
 
       begin
         get_price_data elem
