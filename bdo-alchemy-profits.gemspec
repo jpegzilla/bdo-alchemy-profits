@@ -18,7 +18,4 @@ Gem::Specification.new do |spec|
   spec.files = Dir['{lib,bin}/**/**']
   spec.require_paths = ['lib']
   spec.executables << 'bdoap'
-
-  spec.add_development_dependency "bundler", "~> 2.6"
-  spec.add_development_dependency "rake", "~> 13.2"
 end

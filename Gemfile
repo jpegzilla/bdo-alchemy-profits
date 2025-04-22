@@ -2,14 +2,15 @@
 
 source 'https://rubygems.org'
 
-gem 'async'
 gem 'nokogiri'
 gem 'httparty'
 gem 'json'
 gem 'rainbow'
-gem 'rake'
-gem 'rubocop'
 gem 'tty-prompt'
-gem 'awesome_print'
 
-gemspec
+group :development do
+  gem 'awesome_print'
+  gem 'bundler'
+  gem 'rake'
+  gem 'rubocop'
+end

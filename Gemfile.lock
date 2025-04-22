@@ -1,38 +1,17 @@
-PATH
-  remote: .
-  specs:
-    bdoap (0.0.1)
-
 GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.3)
-    async (2.23.1)
-      console (~> 1.29)
-      fiber-annotation
-      io-event (~> 1.9)
-      metrics (~> 0.12)
-      traces (~> 0.15)
     awesome_print (1.9.2)
     bigdecimal (3.1.9)
-    console (1.30.2)
-      fiber-annotation
-      fiber-local (~> 1.1)
-      json
     csv (3.3.3)
-    fiber-annotation (0.2.0)
-    fiber-local (1.1.0)
-      fiber-storage
-    fiber-storage (1.0.0)
     httparty (0.23.1)
       csv
       mini_mime (>= 1.0.0)
       multi_xml (>= 0.5.2)
-    io-event (1.10.0)
     json (2.10.2)
     language_server-protocol (3.17.0.4)
     lint_roller (1.1.0)
-    metrics (0.12.2)
     mini_mime (1.1.5)
     multi_xml (0.7.1)
       bigdecimal (~> 3.1)
@@ -64,7 +43,6 @@ GEM
       parser (>= 3.3.7.2)
       prism (~> 1.4)
     ruby-progressbar (1.13.0)
-    traces (0.15.2)
     tty-color (0.6.0)
     tty-cursor (0.7.1)
     tty-prompt (0.23.1)
@@ -84,10 +62,8 @@ PLATFORMS
   x64-mingw-ucrt
 
 DEPENDENCIES
-  async
   awesome_print
-  bdoap!
-  bundler (~> 2.6)
+  bundler
   httparty
   json
   nokogiri
