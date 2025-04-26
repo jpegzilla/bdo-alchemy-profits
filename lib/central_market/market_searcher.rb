@@ -8,13 +8,15 @@ require_relative '../utils/price_calculator'
 require_relative '../utils/recipe_logger'
 require_relative '../utils/npc_item_index'
 require_relative './category_search_options'
+require_relative './exchange_items'
 
 # search for information on recipes in given categories
 class MarketSearcher
   include Utils
+  include ExchangeItems
   include MarketSearchTools
 
-  def initialize(region, cli)
+  def initialize(region, cli, free_ingredients)
     @root_url = ENVData.get_root_url region
     @region_subdomain = CLIConstants::REGION_DOMAINS[region.to_sym].split('.')[1..].join('.')
     @market_list_url = "#{@root_url}#{ENVData::WORLD_MARKET_LIST}"
@@ -23,6 +25,8 @@ class MarketSearcher
     @market_sell_buy_url = "#{@root_url}#{ENVData::MARKET_SELL_BUY_INFO}"
     @cli = cli
     @ingredient_cache = {}
+    @free_ingredients = free_ingredients
+    @out_of_stock_items = []
   end
 
   def get_alchemy_market_data(category)
@@ -129,6 +133,7 @@ class MarketSearcher
     aggregate_response.flatten
   end
 
+  # set is_recipe_ingredient = true if you're using this function to get the cost of buying an ingredient
   def get_item_price_info(ingredient_id, is_recipe_ingredient = true)
     npc_item = NPCItemIndex.get_item(ingredient_id)
 
@@ -145,7 +150,7 @@ class MarketSearcher
           content_type: 'application/x-www-form-urlencoded'
         )
 
-        sleep rand(1..3)
+        sleep rand
       rescue StandardError => error
         puts @cli.red("this could be a network failure. get_item_price_info broke.")
 
@@ -156,7 +161,9 @@ class MarketSearcher
         end
       end
 
-      ingredient_data = {} if ingredient_data.include? 'use a different browser'
+      # TODO: actually implement a normal way of handling malformed results
+      ingredient_data = {} if ingredient_data.to_s.downcase.include? 'use a different browser'
+      ingredient_data = {} if ingredient_data.to_s.downcase.include? 'incapsula incident'
 
       if ingredient_data.dig('detailList')
         resolved_data = ingredient_data['detailList'][0]
@@ -172,6 +179,9 @@ class MarketSearcher
               body: body_string,
               content_type: 'application/x-www-form-urlencoded'
             )
+
+            detailed_price_list = {} if detailed_price_list.to_s.downcase.include? 'incapsula incident'
+
             sleep rand
           rescue StandardError => error
             puts @cli.red("this could be a network failure. get_item_price_info broke.")
@@ -206,9 +216,6 @@ class MarketSearcher
 
   def get_all_recipe_prices(item_codex_data, subcategory)
     mapped_recipe_prices = []
-    out_of_stock_items = []
-    # vipiko is about to start writing carriage returns,
-    # so printing newline here
 
     item_codex_data.each.with_index do |item_with_recipe, index|
       potential_recipes = []
@@ -220,26 +227,35 @@ class MarketSearcher
       recipe_list.each do |(recipe_id, recipe)|
         potential_recipe = []
 
-        recipe.each do |ingredient|
+        recipe.each.with_index do |ingredient, ing_index|
           ingredient_id = ingredient['id'] ? ingredient['id'] : ingredient[:id]
           quant = ingredient['quant'] ? ingredient['quant'] : ingredient[:quant]
 
-          if @ingredient_cache[ingredient_id]
+          if @ingredient_cache[ingredient_id] && EXCHANGE_ITEMS[ingredient_id].nil? == true
             cached_ingredient = { **@ingredient_cache[ingredient_id], quant: quant }
             potential_recipe.push cached_ingredient
             next
           end
 
           item_price_info_hash = get_item_price_info ingredient_id, true
+          previous_ingredient_id = recipe.dig(ing_index - 1, :id)
+          previous_ingredient_price = potential_recipe.dig(ing_index - 1, :price)
 
-          next if item_price_info_hash.nil?
+          if item_price_info_hash.nil?
+            next if previous_ingredient_id.nil? || previous_ingredient_price.nil?
+            exchange_info = get_exchange_item_info(previous_ingredient_id, ingredient_id, previous_ingredient_price, quant)
+            next unless exchange_info
+            item_price_info_hash = exchange_info
+          end
 
           item_price_info = item_price_info_hash.transform_keys { |key|
             key.to_s.gsub(/(.)([A-Z])/,'\1_\2').downcase.to_sym
           }
 
-          if item_price_info[:count].zero? && rand > 0.5
-            out_of_stock_items.push(item_price_info[:name].downcase)
+          # gathering out of stock items to show to the user
+          stock_string = "#{quant}x [#{item_price_info[:main_key]}] #{item_price_info[:name].downcase}"
+          if item_price_info[:count] < quant && !@out_of_stock_items.include?(stock_string)
+            @out_of_stock_items.push(stock_string)
           end
 
           stock_count = get_stock_count item_price_info
@@ -248,6 +264,15 @@ class MarketSearcher
           npc_data = {}
           npc_data = item_price_info if item_price_info[:is_npc_item]
           price_per_one = npc_data[:price].to_i.zero? ? item_price_info[:price_per_one].to_i : npc_data[:price].to_i
+
+          if @free_ingredients.include?(item_price_info[:main_key].to_s) ||
+            @free_ingredients.include?(item_price_info[:id].to_s) ||
+            (item_price_info[:exchange_with] || []).index { |item| @free_ingredients.include? item.to_s }
+            price_per_one = 0
+            stock_count = Float::INFINITY
+            npc_data[:price] = 0
+            npc_data[:price_per_one] = 0
+          end
 
           # TODO: this is ridiculous, dedupe the hash values
           potential_ingredient_hash = {
@@ -261,13 +286,12 @@ class MarketSearcher
             quant: quant,
             price_per_one: price_per_one,
             count: stock_count,
-            for_recipe_id: recipe_id,
             **npc_data
           }
 
           @ingredient_cache[ingredient_id] = potential_ingredient_hash
 
-          potential_recipe.push potential_ingredient_hash
+          potential_recipe.push({ **potential_ingredient_hash, for_recipe_id: recipe_id })
         end
 
         next unless potential_recipe.length == recipe.length
@@ -299,6 +323,11 @@ class MarketSearcher
       end
     end
 
+    # 1 in 4 chance to create an imperfect alchemy stone of any specific type with the recipe
+    if /imperfect alchemy stone/.match(item[:name].downcase)
+      average_procs = 0.25
+    end
+
     filtered_recipes = potential_recipes.filter do |recipe|
       recipe.all? do |ingredient|
         if ingredient[:total_in_stock] == Float::INFINITY
@@ -317,7 +346,11 @@ class MarketSearcher
 
     return nil if selected_recipe.nil?
 
-    average_procs = 1 if selected_recipe.find { |a| a[:name].downcase == 'blue reagent' } != nil
+    # set procs to 1 if 1 blue reagent required
+    average_procs = 1 if selected_recipe.find { |a| a[:name].downcase == 'blue reagent' && a[:quant] == 1 }
+
+    # set procs to 1.5 if using magical lightstone crystals to purify lightstones
+    average_procs = 1.5 if selected_recipe.find { |a| a[:name].downcase == 'magical lightstone crystal' }
 
     # remove recipes where one ingredient is used twice
     # this usually happens because of incorrect substitution being
@@ -325,8 +358,6 @@ class MarketSearcher
     # are some seriously mysterious alchemy recipes out there...
     ingredients_already_appeared = []
     filtered_selected_recipe = selected_recipe.filter do |ingredient|
-      # set procs to 1 if blue reagent required
-      average_procs = 1 if ingredient[:name].downcase == 'blue reagent'
       return false if ingredients_already_appeared.include? ingredient[:name]
       ingredients_already_appeared.push(ingredient[:name])
       true
@@ -346,6 +377,8 @@ class MarketSearcher
       body: body_string,
       content_type: 'application/x-www-form-urlencoded'
     )
+
+    item_price_data = {} if item_price_data.to_s.downcase.include? 'incapsula incident'
 
     # assuming we were able to find the item price list
     if item_price_data&.dig('marketConditionList')
@@ -381,7 +414,6 @@ class MarketSearcher
       # taxed profit on selling max amount of this this recipe, with
       # average procs accounted for
       # @type [Integer]
-      #
       max_taxed_sell_profit_after_procs = (PriceCalculator.calculate_taxed_price(item_market_sell_price * max_potion_count) - total_max_ingredient_cost) * average_procs
 
       return nil if max_taxed_sell_profit_after_procs.to_s.downcase == 'nan'
@@ -389,7 +421,7 @@ class MarketSearcher
 
       recipe_logger = RecipeLogger.new @cli
       results = recipe_logger.log_recipe_data(item, selected_recipe, max_potion_count, item_market_sell_price, total_ingredient_cost, average_procs, total_max_ingredient_cost, raw_max_market_sell_price, max_taxed_sell_profit_after_procs, raw_profit_with_procs, taxed_sell_profit_after_procs)
-      { information: results[:recipe_info], max_profit: max_taxed_sell_profit_after_procs, silver_per_hour: results[:silver_per_hour] }
+      { information: results[:recipe_info], max_profit: max_taxed_sell_profit_after_procs, silver_per_hour: results[:silver_per_hour], out_of_stock: @out_of_stock_items }
     end
   end
 
@@ -402,10 +434,6 @@ class MarketSearcher
 
     item_info[:total_in_stock].to_i.zero? ? item_info[:count].to_i : item_info[:total_in_stock].to_i
   end
-
-  # async def do_if_category_matches(options, &procedure)
-  #   procedure.call.wait if options[:subcategory] == options[:subcat_to_match] || options[:all_subcategories]
-  # end
 
   def do_if_category_matches(options, &procedure)
     procedure.call if options[:all_subcategories]

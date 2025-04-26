@@ -64,7 +64,7 @@ module MarketSearchTools
       {
         name: 'alchemy stone',
         url: search_url,
-        query_string: "#{ENVData::RVT}&searchText=stone+of",
+        query_string: "#{ENVData::RVT}&searchText=imperfect+alchemy+stone+of",
         # update: ->(data) { { alchemyStoneResponse: data['list'] } },
         update: ->(data) { data['list'].filter { |i| i['grade'] == 0 } }
       },
@@ -114,6 +114,20 @@ module MarketSearchTools
           "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:other]}",
         # update: ->(data) { { otherResponse: data['marketList'] } },
         update: ->(data) { data['marketList'] }
+      },
+      {
+        name: 'manos',
+        url: search_url,
+        query_string: "#{ENVData::RVT}&searchText=manos",
+        # update: ->(data) { { otherResponse: data['marketList'] } },
+        update: ->(data) { data['list'] }
+      },
+      {
+        name: 'purified lightstone',
+        url: search_url,
+        query_string: "#{ENVData::RVT}&searchText=purified+lightstone+of",
+        # update: ->(data) { { otherResponse: data['marketList'] } },
+        update: ->(data) { data['list'] }
       }
     ]
   end

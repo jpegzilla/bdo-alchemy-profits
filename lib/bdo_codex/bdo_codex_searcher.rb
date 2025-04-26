@@ -46,8 +46,11 @@ class BDOCodexSearcher
       data = HTTParty.get(
         URI(url),
         headers: ENVData::REQUEST_OPTS[:bdo_codex_headers],
-        content_type: 'application/x-www-form-urlencoded'
+        content_type: 'application/x-www-form-urlencoded',
+        stream_body: true
       )
+
+      return {} unless data.length < 10_000_000
 
       JSON.parse data unless data.body.nil? or data.body.empty?
     rescue
@@ -85,6 +88,11 @@ class BDOCodexSearcher
       permutated_chunks = ArrayUtils.deep_permute chunked_by_substitution_groups, original_recipe_length
 
       permutated_chunks.each do |id_list|
+        if id_list.uniq.length != id_list.length
+          all_recipe_substitutions.push recipe
+          next
+        end
+
         recipe_with_new_items = [*recipe]
         recipe_with_new_items[RECIPE_INGREDIENTS_INDEX] = [*recipe][RECIPE_INGREDIENTS_INDEX].map.with_index do |recipe_list, idx|
           { **recipe_list, id: id_list[idx] }
@@ -152,7 +160,7 @@ class BDOCodexSearcher
   def get_item_recipes(item_id, item_name)
     recipe_direct_url = "https://bdocodex.com/query.php?a=recipes&type=product&item_id=#{item_id}&l=#{@region_lang}"
     mrecipe_direct_url = "https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=#{item_id}&l=#{@region_lang}"
-    # houserecipe_direct_url = "https://bdocodex.com/query.php?a=designs&type=product&item_id=#{item_id}&l=#{@region_lang}"
+    houserecipe_direct_url = "https://bdocodex.com/query.php?a=designs&type=product&item_id=#{item_id}&l=#{@region_lang}"
 
     # TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
     begin
@@ -239,10 +247,12 @@ class BDOCodexSearcher
           @cli.vipiko_overwrite "(#{index + 1} / #{item_list.length}) let's read the recipe for #{@cli.yellow "[#{item[:name].downcase}]"}. hmm..."
 
           stock_count = item[:total_in_stock].to_i.zero? ? item[:count].to_i : item[:total_in_stock].to_i
+          price = item[:price_per_one]
+
           recipe_hash = {
             name: item[:name],
             recipe_list: all_recipes_for_item,
-            price: item[:price_per_one],
+            price: price,
             id: item[:main_key],
             total_trade_count: item[:total_trade_count],
             total_in_stock: stock_count,

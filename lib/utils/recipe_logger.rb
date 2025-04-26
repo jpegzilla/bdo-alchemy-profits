@@ -34,6 +34,9 @@ module Utils
         formatted_max_potion_amount = @cli.yellow PriceCalculator.format_num max_potion_count * ingredient[:quant]
         formatted_stock_count = @cli.yellow PriceCalculator.format_num ingredient[:total_in_stock]
         formatted_npc_information = ingredient[:is_npc_item] ? @cli.yellow(" (sold by #{ingredient[:npc_type]} npcs)") : ''
+        if ingredient[:exchange_with_npc]
+          formatted_npc_information = @cli.yellow(" (exchange at least #{ingredient[:must_exchange]} #{ingredient[:exchange_with_names].join(' / ')} for #{ingredient[:exchanging_grants] * ingredient[:must_exchange]} with #{ingredient[:exchange_with_npc]})")
+        end
 
         stock_counts.push "#{formatted_potion_amount} [max: #{formatted_max_potion_amount}] [#{ingredient[:id]}] #{@cli.yellow "#{ingredient[:name].downcase}: #{formatted_stock_count}"} in stock#{formatted_npc_information}. price: #{formatted_price} [for max: #{formatted_max_price}]"
       end
@@ -41,6 +44,12 @@ module Utils
       market_stock_string = item[:total_in_stock] > 2000 ? @cli.red(PriceCalculator.format_num(item[:total_in_stock])) : @cli.green(PriceCalculator.format_num(item[:total_in_stock]))
 
       trade_count_string = item[:total_trade_count] < 10_000_000 ? @cli.red(PriceCalculator.format_num(item[:total_trade_count])) : @cli.green(PriceCalculator.format_num(item[:total_trade_count]))
+
+      ratio_string = if item[:total_trade_count] / (item[:total_in_stock].zero? ? 1 : item[:total_in_stock]) < 50_000
+                       @cli.red('bad')
+                     else
+                       @cli.green('good')
+                     end
 
       estimated_craft_time = 1.2
       calculated_time = max_potion_count * estimated_craft_time
@@ -52,6 +61,7 @@ module Utils
       #{padstr("market price of item")}#{@cli.yellow PriceCalculator.format_price item_market_sell_price}
       #{padstr("market stock of item")}#{market_stock_string}
       #{padstr("total trades of item")}#{trade_count_string}
+      #{padstr("ratio")}#{ratio_string}
       #{padstr("you can craft")}#{@cli.yellow PriceCalculator.format_num max_potion_count}
       #{padstr("theoretical max output")}#{@cli.yellow PriceCalculator.format_num(max_potion_count * average_procs)}
       #{padstr("cost of ingredients")}#{@cli.yellow PriceCalculator.format_price total_ingredient_cost} (accounting for average #{average_procs} / craft)

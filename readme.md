@@ -9,7 +9,9 @@
 
 ---
 
-this is a tool that searches the central market for potions and other items that you can make profit on just by buying all the ingredients and selling the result. of course, sometimes there are very few! but they're typically very low volume, limiting total profits. BUT, if there are any, this tool will find them!
+this is a tool that searches the central market for potions and other items that you can make profit on just by buying all the ingredients and selling the result. of course, sometimes there are very few! but they're typically very low volume, limiting total profits. BUT, if there are any, this tool will find them! all you have to do is select your configuration and the tool will do the rest:
+
+![example of tool configuration options](screenshots/example_four.png)
 
 it assumes
 - you have high enough alchemy mastery (artisan 1) for max procs on recipes that are affected, such as bloods and elixirs.
@@ -58,12 +60,13 @@ if you have [ruby](https://www.ruby-lang.org/en/) 3.1 installed on your computer
 
 ## standalone executable (outdated)
 
-standalone executables are available on the [releases page](https://github.com/jpegzilla/bdo-alchemy-profits/releases)!
+standalone executables are available on the [releases page](https://github.com/jpegzilla/bdo-alchemy-profits/releases)! this build is extremely old. calculations aren't very accurate, you can't search permutations, and it's just not that good.
 
 currently, there's only a build for windows. I don't have a mac or linux machine to test with, so I won't provide binaries for other operating systems yet.
 
 ## todo:
 
+-   [x] allow users to provide a list of item ids that they have a huge stock of. this will make the script consider that item's cost as 0 and stock as infinite
 -   [x] cache ingredient prices
 -   [x] add option to search for all possible alchemy consumables
 -   [x] account for market tax

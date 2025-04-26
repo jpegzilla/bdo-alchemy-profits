@@ -16,11 +16,13 @@ module Utils
       other: 'category 35, subcategory 8',
       blood: 'searches "\'s blood"',
       oil: "searches 'oil of'",
-      'alchemy stone': "searches 'stone of'",
+      'alchemy stone': "searches 'imperfect alchemy stone of'",
       reagent: "searches 'reagent'",
       'black stone': 'category 30, subcategory 1',
       'misc': 'category 25, subcategory 8',
       'other tools': 'category 40, subcategory 10',
+      'manos': "searches 'manos'",
+      'purified lightstone': "searches 'purified lightstone of' (requires guru 1 alchemy)",
       # 'magic crystal': "searches 'magic crystal'",
       exit: 'stops the search'
     }.freeze
@@ -105,6 +107,18 @@ module Utils
         Dnt: '1'
       }
     }.freeze
+
+    # TODO: wip...
+    def self.get_bdo_codex_headers(item_id, region)
+      item_url = "https://bdocodex.com/#{region}/item/#{item_id}"
+      cookie_string = "bddatabaselang=#{region}"
+      if rand > 0.5
+        REQUEST_OPTS[:central_market_headers]
+        { **REQUEST_OPTS[:bdo_codex_headers], 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36', Cookie: cookie_string }
+      else
+        { **REQUEST_OPTS[:bdo_codex_headers], 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36', Cookie: cookie_string }
+      end
+    end
 
     def self.get_central_market_headers(incap_cookie = '')
       original_cookie = REQUEST_OPTS[:central_market_headers][:Cookie]
