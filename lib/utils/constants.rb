@@ -23,8 +23,10 @@ module Utils
       'other tools': 'category 40, subcategory 10',
       'manos': "searches 'manos'",
       'purified lightstone': "searches 'purified lightstone of' (requires guru 1 alchemy)",
+      'combined crystals': 'category 50, subcategory 4',
+      'essences of dawn': "searches 'essence of dawn'",
       # 'magic crystal': "searches 'magic crystal'",
-      exit: 'stops the search'
+      exit: 'stops the search',
     }.freeze
 
     REGION_DOMAINS = {
@@ -41,7 +43,7 @@ module Utils
       th: 'trade.th.playblackdesert.com',
       tw: 'trade.tw.playblackdesert.com',
       sa: 'blackdesert-tradeweb.playredfox.com',
-      exit: 'stops the search'
+      exit: 'stops the search',
     }.freeze
 
     REGION_LANGUAGES = {
@@ -61,13 +63,18 @@ module Utils
       id: 'basa indonesia',
       se: 'sea english',
       gl: 'global lab',
-      exit: 'stops the search'
+      exit: 'stops the search',
     }.freeze
 
     AGGRESSION_LEVELS = {
       normal: 'evaluate one permutation of each recipe',
       hyperaggressive: 'evaluate every substitution for every recipe',
-      exit: 'stops the search'
+      exit: 'stops the search',
+    }.freeze
+
+    YES_OR_NO = {
+      no: false,
+      yes: true,
     }.freeze
 
     def self.set_rvt(rvt)
@@ -101,10 +108,10 @@ module Utils
         'x-cdn': 'Imperva'
       },
       bdo_codex_headers: {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-        Dnt: '1'
+        Dnt: '1',
+        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7'
       }
     }.freeze
 

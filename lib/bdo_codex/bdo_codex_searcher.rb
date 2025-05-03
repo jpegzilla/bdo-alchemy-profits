@@ -24,13 +24,18 @@ class BDO_CODEX_UTILS
     'products',
     'all ingredients',
   ]
+  def self.acc_number_to_enhance_level(number)
+    %w[PRI DUO TRI TET PEN][number]
+  end
 end
 
 # used to retrieve items from BDOCodex
 class BDOCodexSearcher
   include Utils
 
+  RECIPE_PRODUCTS_INDEX = 3
   RECIPE_INGREDIENTS_INDEX = 2
+  RECIPE_NAME_KEY = 1
 
   def initialize(region, lang, cli, hyper_aggressive = false)
     @region = region
@@ -41,16 +46,14 @@ class BDOCodexSearcher
     @hyper_aggressive = hyper_aggressive
   end
 
-  def get_recipe_url(url)
+  def get_recipe_url(url, item_name)
     begin
       data = HTTParty.get(
         URI(url),
         headers: ENVData::REQUEST_OPTS[:bdo_codex_headers],
-        content_type: 'application/x-www-form-urlencoded',
-        stream_body: true
       )
 
-      return {} unless data.length < 10_000_000
+      return {} unless data.length < 1_000_000
 
       JSON.parse data unless data.body.nil? or data.body.empty?
     rescue
@@ -108,6 +111,8 @@ class BDOCodexSearcher
 
   def parse_raw_recipe(recipe_data, item_name)
     item_with_ingredients = recipe_data.dig(BDO_CODEX_UTILS::BDOCODEX_QUERY_DATA_KEY)
+    has_subs = false
+
 
     if item_with_ingredients
       recipe_with_substitute_ids = item_with_ingredients.map do |arr|
@@ -117,29 +122,37 @@ class BDOCodexSearcher
       end.first
 
       all_potion_recipes = item_with_ingredients.map do |arr|
+        is_m_recipe = false
         mapped_item_data = arr
           .filter.with_index { |_, idx | !BDO_CODEX_UTILS::RECIPE_COLUMNS[idx].nil? }
           .map.with_index do |raw_element, idx|
             category = BDO_CODEX_UTILS::RECIPE_COLUMNS[idx]
 
-            next if ['skill level', 'exp', 'type', 'icon', 'total weight of materials'].include? category
+            next if ['skill level', 'exp', 'icon', 'total weight of materials'].include? category
 
             element = Nokogiri::HTML5 raw_element.to_s
+
+            has_subs = true if element.to_s.include? 'icon-repeat'
 
             result = {
               :category => category,
               :element => element
             }
 
-            result[:element] = element.text.downcase if category == 'title'
+            if %w[title id].include? category
+              result[:element] = element.text.downcase
+            end
 
-            result[:element] = element.text.downcase if category == 'id'
+            if category == 'type'
+              is_m_recipe = true unless %w[cooking alchemy].include? element.text.downcase
+            end
 
             if %w[materials products].include? category
               quants = element.text.scan(/\](\d+)/im).map { |e| e[0].to_i }
+              enhance_levels = element.text.scan(/](\+?\d)/im).map { |e| e[0].to_s }
 
               ids = element.to_s.scan(/#{@region_lang}\/item\/(\d+)/).map { |e| e[0].to_i }
-              result[:element] = ids.map.with_index { |id, i| { id: id, quant: quants[i]} }.flatten
+              result[:element] = ids.map.with_index { |id, i| { id: id, quant: quants[i] || 1, enhance_level: enhance_levels[i][0] == '+' ?  enhance_levels[i].to_i : 0, is_m_recipe: is_m_recipe } }.flatten
             end
 
             result
@@ -153,6 +166,8 @@ class BDOCodexSearcher
         filtered_item_data
       end
 
+      return all_potion_recipes unless has_subs
+
       get_recipe_substitutions recipe_with_substitute_ids, all_potion_recipes, item_name
     end
   end
@@ -164,17 +179,17 @@ class BDOCodexSearcher
 
     # TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
     begin
-      direct_data = get_recipe_url recipe_direct_url
+      direct_data = get_recipe_url recipe_direct_url, item_name
 
       if !direct_data || direct_data.empty?
-        mrecipe_data = get_recipe_url mrecipe_direct_url
+        mrecipe_data = get_recipe_url mrecipe_direct_url, item_name
 
         return parse_raw_recipe mrecipe_data, item_name
       else
         parsed = parse_raw_recipe direct_data, item_name
 
         if !parsed || parsed.empty?
-          mrecipe_data = get_recipe_url mrecipe_direct_url
+          mrecipe_data = get_recipe_url mrecipe_direct_url, item_name
 
           return parse_raw_recipe mrecipe_data, item_name
         end
@@ -206,7 +221,7 @@ class BDOCodexSearcher
     cache_data = {}
 
     # TODO: remove this check
-    # return unless item_name.downcase == 'harmony draught'
+    # return unless item_name.downcase == 'essence of dawn - damage reduction'
 
     unless potential_cached_recipes.to_a.empty?
       recipe_to_maybe_select = potential_cached_recipes.filter { |elem| elem[1].downcase == item_name.downcase }
@@ -214,9 +229,33 @@ class BDOCodexSearcher
     end
 
     recipes = get_item_recipes item_id, item_name
-    cache_data[item_index] = recipes
 
-    @cache.write cache_data
+    if recipes
+      cache_data[item_index] = [*recipes]
+      has_uncacheable = recipes.index do |cache_item|
+        has_enhanced_ingredient = cache_item[RECIPE_INGREDIENTS_INDEX].index { |ingredient| ingredient[:enhance_level] > 0 }
+
+        has_enhanced_ingredient
+      end
+
+      cache_data[item_index] = recipes.map do |cache_item|
+        new_cache_recipes = cache_item[RECIPE_INGREDIENTS_INDEX].map do |ingredient|
+          { id: ingredient[:id], quant: ingredient[:quant] }
+        end
+        new_cache_ouputs = cache_item[RECIPE_PRODUCTS_INDEX].map do |ingredient|
+          { id: ingredient[:id], quant: ingredient[:quant] }
+        end
+
+        new_cache_item = [*cache_item]
+
+        new_cache_item[RECIPE_INGREDIENTS_INDEX] = new_cache_recipes
+        new_cache_item[RECIPE_PRODUCTS_INDEX] = new_cache_ouputs
+
+        new_cache_item
+      end
+
+      @cache.write cache_data unless has_uncacheable
+    end
 
     recipes
   end

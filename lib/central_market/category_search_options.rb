@@ -23,49 +23,48 @@ module MarketSearchTools
         name: 'black stone',
         url: url,
         query_string: "#{ENVData::RVT}&mainCategory=30&subCategory=1",
-        # update: ->(data) { { blackStoneResponse: data['list'] } },
-        update: ->(data) { data['list'] }
+        update: ->(data) { data['marketList'] }
       },
       {
         name: 'misc',
         url: url,
         query_string: "#{ENVData::RVT}&mainCategory=25&subCategory=8",
-        # update: ->(data) { { blackStoneResponse: data['list'] } },
-        update: ->(data) { data['list'] }
+        update: ->(data) { data['marketList'] }
       },
       {
         name: 'other tools',
         url: url,
         query_string: "#{ENVData::RVT}&mainCategory=40&subCategory=10",
-        # update: ->(data) { { blackStoneResponse: data['list'] } },
-        update: ->(data) { data['list'] }
+        update: ->(data) { data['marketList'] }
       },
       {
         name: 'blood',
         url: search_url,
         query_string: "#{ENVData::RVT}&searchText='s+blood",
-        # update: ->(data) { { bloodResponse: data['list'] } },
+        update: ->(data) { data['list'] }
+      },
+      {
+        name: 'essences of dawn',
+        url: search_url,
+        query_string: "#{ENVData::RVT}&searchText=essence+of+dawn",
         update: ->(data) { data['list'] }
       },
       {
         name: 'reagent',
         url: search_url,
         query_string: "#{ENVData::RVT}&searchText=reagent",
-        # update: ->(data) { { reagentResponse: data['list'] } },
         update: ->(data) { data['list'] }
       },
       {
         name: 'oil',
         url: search_url,
         query_string: "#{ENVData::RVT}&searchText=oil+of",
-        # update: ->(data) { { oilResponse: data['list'] } },
         update: ->(data) { data['list'] }
       },
       {
         name: 'alchemy stone',
         url: search_url,
         query_string: "#{ENVData::RVT}&searchText=imperfect+alchemy+stone+of",
-        # update: ->(data) { { alchemyStoneResponse: data['list'] } },
         update: ->(data) { data['list'].filter { |i| i['grade'] == 0 } }
       },
       # {
@@ -76,11 +75,16 @@ module MarketSearchTools
       #   update: ->(data) { data['list'] }
       # },
       {
+        name: 'combined crystals',
+        url: url,
+        query_string: "#{ENVData::RVT}&mainCategory=50&subCategory=4",
+        update: ->(data) { data['marketList'] }
+      },
+      {
         name: 'offensive',
         url: url,
         query_string:
           "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:offensive]}",
-        # update: ->(data) { { offensiveResponse: data['marketList'] } },
         update: ->(data) { data['marketList'] }
       },
       {

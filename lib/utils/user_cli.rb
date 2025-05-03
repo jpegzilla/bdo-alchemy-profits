@@ -135,7 +135,14 @@ module Utils
     # prompt the user to decide whether to show or hide a list of out of stock items
     # @return [Boolean] true to show out of stock items, false to hide
     def choose_show_out_of_stock
-      @prompt.yes?('finally, would you like to show the items that were out of stock?')
+      option = @prompt.select('finally, would you like to see a list the ingredients that were out of stock at the end?', { cycle: true, filter: true }) do |menu|
+        add_menu_info(menu, CLIConstants::YES_OR_NO)
+        CLIConstants::YES_OR_NO.each do |k, v|
+          menu.choice "#{k}", v
+        end
+      end
+
+      !!option
     end
 
     # ends the program

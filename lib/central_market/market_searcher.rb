@@ -65,6 +65,9 @@ class MarketSearcher
     puts
     mapped_aggregate = filtered_aggregate.map.with_index do |elem, index|
 
+      # TODO: remove this check
+      # next unless elem['name'].downcase == 'essence of dawn - damage reduction'
+
       @cli.vipiko_overwrite "(#{index + 1} / #{filtered_aggregate.length}) researching #{@cli.yellow elem['name'].downcase}... (category: #{subcategory})"
 
       begin
@@ -134,7 +137,7 @@ class MarketSearcher
   end
 
   # set is_recipe_ingredient = true if you're using this function to get the cost of buying an ingredient
-  def get_item_price_info(ingredient_id, is_recipe_ingredient = true)
+  def get_item_price_info(ingredient_id, is_recipe_ingredient = true, enhance_level = 0)
     npc_item = NPCItemIndex.get_item(ingredient_id)
 
     return npc_item if npc_item
@@ -166,9 +169,10 @@ class MarketSearcher
       ingredient_data = {} if ingredient_data.to_s.downcase.include? 'incapsula incident'
 
       if ingredient_data.dig('detailList')
-        resolved_data = ingredient_data['detailList'][0]
+        resolved_data = ingredient_data['detailList'].find { |entry| entry['subKey'].to_i == enhance_level.to_i }
+        resolved_data = ingredient_data['detailList'][0] if resolved_data.nil?
         unless resolved_data.nil?
-          body_string = "#{ENVData::RVT}&mainKey=#{resolved_data['mainKey']}&subKey=0&chooseKey=0&isUp=true&keyType=0&name=#{URI.encode_www_form_component(resolved_data['name'])}"
+          body_string = "#{ENVData::RVT}&mainKey=#{resolved_data['mainKey']}&subKey=#{enhance_level}&chooseKey=0&isUp=true&keyType=0&name=#{URI.encode_www_form_component(resolved_data['name'])}"
 
           detailed_price_list = {}
 
@@ -203,14 +207,13 @@ class MarketSearcher
 
           if optimal_price
             if optimal_price['pricePerOne'] && optimal_price['sellCount']
-              { **resolved_data, count: total_stock, pricePerOne: optimal_price['pricePerOne'] }
+              { **resolved_data, count: total_stock, pricePerOne: optimal_price['pricePerOne'], enhanceLevel: enhance_level }
             else
-              { **resolved_data, count: total_stock, pricePerOne: resolved_data['pricePerOne'] }
+              { **resolved_data, count: total_stock, pricePerOne: resolved_data['pricePerOne'], enhanceLevel: enhance_level }
             end
           end
         end
       end
-
     end
   end
 
@@ -222,22 +225,29 @@ class MarketSearcher
       name = item_with_recipe[:name].downcase
       recipe_list = item_with_recipe[:recipe_list]
 
+      # TODO: remove this line
+      # next unless name == 'essence of dawn - damage reduction'
+
       @cli.vipiko_overwrite "(#{index + 1} / #{item_codex_data.length}) I'll ask a merchant about the price of ingredients for #{@cli.yellow name}!"
 
-      recipe_list.each do |(recipe_id, recipe)|
+      recipe_list.each do |recipe_id, recipe|
         potential_recipe = []
 
         recipe.each.with_index do |ingredient, ing_index|
           ingredient_id = ingredient['id'] ? ingredient['id'] : ingredient[:id]
           quant = ingredient['quant'] ? ingredient['quant'] : ingredient[:quant]
+          enhance_level = ingredient['enhance_level'] ? ingredient['enhance_level'] : ingredient[:enhance_level]
+          is_m_recipe = ingredient['is_m_recipe'] ? ingredient['is_m_recipe'] : ingredient[:is_m_recipe]
+          quant = 1 if quant.nil?
+          enhance_level = 0 if enhance_level.nil?
 
           if @ingredient_cache[ingredient_id] && EXCHANGE_ITEMS[ingredient_id].nil? == true
-            cached_ingredient = { **@ingredient_cache[ingredient_id], quant: quant }
+            cached_ingredient = { **@ingredient_cache[ingredient_id], quant: quant, for_recipe_id: recipe_id, is_m_recipe: is_m_recipe }
             potential_recipe.push cached_ingredient
             next
           end
 
-          item_price_info_hash = get_item_price_info ingredient_id, true
+          item_price_info_hash = get_item_price_info ingredient_id, true, enhance_level
           previous_ingredient_id = recipe.dig(ing_index - 1, :id)
           previous_ingredient_price = potential_recipe.dig(ing_index - 1, :price)
 
@@ -286,12 +296,13 @@ class MarketSearcher
             quant: quant,
             price_per_one: price_per_one,
             count: stock_count,
+            enhance_level: item_price_info[:enhance_level],
             **npc_data
           }
 
           @ingredient_cache[ingredient_id] = potential_ingredient_hash
 
-          potential_recipe.push({ **potential_ingredient_hash, for_recipe_id: recipe_id })
+          potential_recipe.push({ **potential_ingredient_hash, for_recipe_id: recipe_id, is_m_recipe: is_m_recipe })
         end
 
         next unless potential_recipe.length == recipe.length
@@ -309,7 +320,7 @@ class MarketSearcher
     average_procs = 1
 
     if [25, 35].include? item[:main_category]
-      unless /oil of|draught|\[mix\]|\[party\]|immortal:|perfume|indignation/im.match item[:name].downcase
+      unless /oil of|draught|\[mix\]|\[party\]|immortal:|perfume|indignation|flame of|essence of dawn/im.match item[:name].downcase
         average_procs = 2.5
       end
 
@@ -421,6 +432,7 @@ class MarketSearcher
 
       recipe_logger = RecipeLogger.new @cli
       results = recipe_logger.log_recipe_data(item, selected_recipe, max_potion_count, item_market_sell_price, total_ingredient_cost, average_procs, total_max_ingredient_cost, raw_max_market_sell_price, max_taxed_sell_profit_after_procs, raw_profit_with_procs, taxed_sell_profit_after_procs)
+
       { information: results[:recipe_info], max_profit: max_taxed_sell_profit_after_procs, silver_per_hour: results[:silver_per_hour], out_of_stock: @out_of_stock_items }
     end
   end
