@@ -66,6 +66,9 @@ module Utils
         silver_per_hour = 'unknown'
       end
 
+      return_on_investment = max_taxed_sell_profit_after_procs.to_f / total_max_ingredient_cost.to_f
+      formatted_roi = return_on_investment > 1 ? @cli.green("#{return_on_investment.round(2)}x") : @cli.red("#{return_on_investment.round(2)}x" )
+
       information = "    #{@cli.yellow "[#{item[:id]}] [#{item[:name].downcase}], recipe id: #{selected_recipe[0][:for_recipe_id]}"}
 
       #{padstr("market price of item")}#{@cli.yellow PriceCalculator.format_price item_market_sell_price}
@@ -84,6 +87,7 @@ module Utils
       #{padstr("total taxed silver per hour")}#{@cli.green silver_per_hour } silver / hour
       #{padstr("total untaxed profit")}#{@cli.green PriceCalculator.format_price raw_profit_with_procs} [max: #{@cli.green PriceCalculator.format_price(raw_profit_with_procs * max_potion_count)}]
       #{padstr("total taxed profit")}#{@cli.green PriceCalculator.format_price taxed_sell_profit_after_procs} [max: #{@cli.green PriceCalculator.format_price(max_taxed_sell_profit_after_procs)}]
+      #{padstr("multiply initial investment by")}#{formatted_roi}
   "
 
       { recipe_info: information, gain: max_taxed_sell_profit_after_procs }

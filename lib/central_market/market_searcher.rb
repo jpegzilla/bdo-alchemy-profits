@@ -433,7 +433,7 @@ class MarketSearcher
       recipe_logger = RecipeLogger.new @cli
       results = recipe_logger.log_recipe_data(item, selected_recipe, max_potion_count, item_market_sell_price, total_ingredient_cost, average_procs, total_max_ingredient_cost, raw_max_market_sell_price, max_taxed_sell_profit_after_procs, raw_profit_with_procs, taxed_sell_profit_after_procs)
 
-      { information: results[:recipe_info], max_profit: max_taxed_sell_profit_after_procs, silver_per_hour: results[:silver_per_hour], out_of_stock: @out_of_stock_items }
+      { information: results[:recipe_info], max_profit: max_taxed_sell_profit_after_procs, gain: results[:gain], out_of_stock: @out_of_stock_items }
     end
   end
 
