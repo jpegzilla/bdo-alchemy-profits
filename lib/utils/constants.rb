@@ -44,7 +44,7 @@ module Utils
       jp: 'trade.jp.playblackdesert.com',
       th: 'trade.th.playblackdesert.com',
       tw: 'trade.tw.playblackdesert.com',
-      sa: 'blackdesert-tradeweb.playredfox.com',
+      sa: 'trade.sa.playblackdesert.com',
       exit: 'stops the search',
     }.freeze
 
