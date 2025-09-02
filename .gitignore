@@ -3,6 +3,7 @@
 error.log
 market_cache
 bdo_codex_cache
+environment.rb
 
 # for my notes and stuff
 npc_item_index.txt

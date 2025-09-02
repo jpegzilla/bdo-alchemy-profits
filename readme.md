@@ -41,7 +41,28 @@ good luck!
 
 ## how to use
 
-**important note:** if you're in a region other than `naeu`, you'll probably need your own `requestVerificationToken`. currently, you'll have to modify the code because my token is hardcoded in. I'll fix it eventually.
+**important note:** you'll first need to provide your own `requestVerificationToken`.
+
+how will you do this? first, navigate to your region's version of the central market website. for me, this is `https://na-trade.naeu.playblackdesert.com/`.
+
+open the developer tools. if you're using chrome, press `F12`. navigate to the network tab and reload the page. you're looking for a request for `hot`, `GetWorldMarketHotList` or `GetMyWalletList`. click on the request and then the list of headers. you need the cookies from that request. feel free to use the search bar in devtools (sometimes called "filter") if you can't find it. then, copy the `__RequestVerificationToken`. its location will be somewhere like this:
+
+![how to retrieve your request verification cookie token. click on the request and look in the request headers for the cookie](./screenshots/how_to_get_rvt_1.png)
+
+then navigate back to the console. paste in this javascript snippet exactly:
+
+```
+`__RequestVerificationToken=${[...document.querySelectorAll("input[name='__RequestVerificationToken']")].map(e => e.value)[0]}`
+```
+
+this will locate the first input with the `__RequestVerificationToken` name attribute and output the token's name for you to copy.
+
+rename the `environment.sample.rb` file to `environment.rb`. then, paste in the two tokens you just copied. the one you got from the network tab should go after `ENV['rvt_cookie']` and the one from the console should go after `ENV['rvt_dom']`. your `environment.rb` file should look something like this:
+
+```
+ENV['rvt_cookie'] = '__RequestVerificationToken=4532tgvber2435...'
+ENV['rvt_dom'] = '__RequestVerificationToken=rfaerveru2348b...'
+```
 
 ### gem
 
