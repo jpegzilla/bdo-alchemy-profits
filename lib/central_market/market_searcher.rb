@@ -24,6 +24,7 @@ class MarketSearcher
     @market_sub_url = "#{@root_url}#{ENVData::MARKET_SUB_LIST}"
     @market_sell_buy_url = "#{@root_url}#{ENVData::MARKET_SELL_BUY_INFO}"
     @cli = cli
+    # cache used to store all ingredients for which the price has already been checked
     @ingredient_cache = {}
     @free_ingredients = free_ingredients
     @out_of_stock_items = []
@@ -320,7 +321,7 @@ class MarketSearcher
     average_procs = 1
 
     if [25, 35].include? item[:main_category]
-      unless /oil of|draught|\[mix\]|\[party\]|immortal:|perfume|indignation|flame of|essence of dawn/im.match item[:name].downcase
+      unless /oil of|draught|\[mix\]|\[party\]|immortal:|perfume|indignation|flame of|essence of dawn|mystical cleaning oil|whale tendon|leather glaze/im.match item[:name].downcase
         average_procs = 2.5
       end
 

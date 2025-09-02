@@ -24,6 +24,7 @@
 # SOFTWARE.
 
 require 'optparse'
+require 'httparty'
 
 require_relative './utils/user_cli'
 require_relative './central_market/market_searcher'
@@ -35,8 +36,102 @@ module BDOAP
   class BDOAlchemyProfits
     include Utils
 
+    def start_enhance(search_string, enhance_starting_level, region, cli)
+      items_at_level = []
+      root_url = ENVData.get_root_url region
+      search_url = "#{root_url}#{ENVData::MARKET_SEARCH_LIST}"
+      sub_url = "#{root_url}#{ENVData::MARKET_SUB_LIST}"
+      category_opts = {
+        url: search_url,
+        query_string: "#{ENVData::RVT}&searchText=#{URI.encode_www_form_component search_string}",
+        update: ->(data) { data['list'] }
+      }
+
+      data = HTTParty.post(
+        URI(category_opts[:url].to_s),
+        headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
+        body: category_opts[:query_string],
+        content_type: 'application/x-www-form-urlencoded'
+      )
+
+      resolved = category_opts[:update].call(data) if data
+
+      return unless resolved
+
+      resolved.each do |item|
+        subdata = HTTParty.post(
+          URI(sub_url),
+          headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
+          body: "#{ENVData::RVT}&mainKey=#{item['mainKey']}&usingCleint=0",
+          content_type: 'application/x-www-form-urlencoded'
+        )
+
+        sleep rand
+
+        if subdata&.dig('detailList')
+          level_map = {
+            0 => 0,
+            1 => 1,
+            2 => 2,
+            3 => 3,
+            4 => 4,
+            5 => 5,
+            6 => 6,
+            7 => 7,
+            8 => 8,
+            9 => 9,
+            10 => 10,
+            11 => 11,
+            12 => 12,
+            13 => 13,
+            14 => 14,
+            15 => 15,
+            16 => 16,
+            17 => 17,
+            18 => 18,
+            19 => 19,
+            20 => 20,
+          }
+
+          level_map_to_bdo = {
+            0 => 0,
+            1 => 1,
+            2 => 2,
+            3 => 3,
+            4 => 4,
+            5 => 5,
+            6 => 6,
+            7 => 7,
+            8 => 8,
+            9 => 9,
+            10 => 10,
+            11 => 11,
+            12 => 12,
+            13 => 13,
+            14 => 14,
+            15 => 15,
+            16 => 'PRI',
+            17 => 'DUO',
+            18 => 'TRI',
+            19 => 'TET',
+            20 => 'PEN',
+          }
+
+          result = subdata['detailList'] .find { |e| e['subKey'].to_s == level_map[enhance_starting_level.to_i].to_s }
+          if result
+            constructed = "    #{result['count']} #{cli.yellow result['name'].downcase} @ #{level_map_to_bdo[result['subKey']]}"
+            items_at_level.push constructed unless result['count'].to_i == 0
+          end
+        end
+      end
+
+      puts "\nthe results are in!\n"
+      items_at_level.each { |item| puts item }
+      puts
+    end
+
     # begin the configuration and search process
-    def start_cli
+    def start_cli(search_string = nil, enhance_starting_level = nil, enhancing = false)
       begin
         options = {}
 
@@ -47,10 +142,20 @@ module BDOAP
         # option setup
         cli = UserCLI.new options
 
-        category = cli.choose_category
-        cli.end_cli if category == 'exit'
+        unless enhancing
+          category = cli.choose_category
+          cli.end_cli if category == 'exit'
+        end
+
         region = cli.choose_region
         cli.end_cli if region == 'exit'
+
+        # start enhancing
+        if enhancing && search_string && enhance_starting_level
+          start_enhance(search_string, enhance_starting_level, region, cli)
+          return
+        end
+
         lang = cli.choose_lang
         cli.end_cli if lang == 'exit'
         aggression = cli.choose_aggression

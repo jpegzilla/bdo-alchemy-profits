@@ -10,6 +10,7 @@ module MarketSearchTools
     offensive: 1,
     defensive: 2,
     functional: 3,
+    food: 4,
     potion: 5,
     other: 8,
     all: [1, 2, 3, 5, 8]
@@ -88,6 +89,13 @@ module MarketSearchTools
         update: ->(data) { data['marketList'] }
       },
       {
+        name: 'food',
+        url: url,
+        query_string:
+          "#{ENVData::RVT}&mainCategory=#{CONSUMABLE_CATEGORY}&subCategory=#{CONSUMABLE_SUBCATEGORIES[:food]}",
+        update: ->(data) { data['marketList'] }
+      },
+      {
         name: 'defensive',
         url: url,
         query_string:
@@ -132,7 +140,14 @@ module MarketSearchTools
         query_string: "#{ENVData::RVT}&searchText=purified+lightstone+of",
         # update: ->(data) { { otherResponse: data['marketList'] } },
         update: ->(data) { data['list'] }
-      }
+      },
+      # {
+      #   name: 'stuffed animals',
+      #   url: search_url,
+      #   query_string: "#{ENVData::RVT}&searchText=stuffed",
+      #   # update: ->(data) { { otherResponse: data['marketList'] } },
+      #   update: ->(data) { data['list'] }
+      # }
     ]
   end
 end
