@@ -1,4 +1,4 @@
-# frozen_string_literal: true
+﻿# frozen_string_literal: true
 
 require 'json'
 require 'httparty'
@@ -46,6 +46,14 @@ class BDOCodexSearcher
     @hyper_aggressive = hyper_aggressive
   end
 
+  def log_error(error, message = nil)
+    puts @cli.red(message) if message
+    File.open(ENVData::ERROR_LOG, 'a+') do |file|
+      file.write(error&.full_message || error.to_s)
+      file.write("\n\r")
+    end
+  end
+
   def get_recipe_url(url, item_name)
     begin
       data = HTTParty.get(
@@ -66,9 +74,8 @@ class BDOCodexSearcher
     all_recipe_substitutions = []
     all_potion_recipes.each do |recipe|
       original_recipe = recipe[RECIPE_INGREDIENTS_INDEX]
-      original_ingredient_indices = original_recipe.map do |item|
-        recipe_with_substitute_ids.find_index { |id| id == item[:id] }
-      end
+      sub_id_index = recipe_with_substitute_ids.each_with_index.to_h { |id, i| [id, i] }
+      original_ingredient_indices = original_recipe.map { |item| sub_id_index[item[:id]] }
 
       chunked_by_substitution_groups = []
 
@@ -197,13 +204,7 @@ class BDOCodexSearcher
         parsed
       end
     rescue StandardError => error
-      puts @cli.red("if you're not messing with the code, you should never see this. get_item_recipes broke.")
-
-      File.open(ENVData::ERROR_LOG, 'a+') do |file|
-        file.write(error.full_message)
-        file.write("\n\r")
-      end
-
+      log_error error, "if you're not messing with the code, you should never see this. get_item_recipes broke."
       []
     end
   end
@@ -267,9 +268,7 @@ class BDOCodexSearcher
     # newline because vipiko is about to start carriage returning
     puts "\n"
     item_list.each.with_index do |item_hash, index|
-      item = item_hash.transform_keys { |key|
-        key.gsub(/(.)([A-Z])/,'\1_\2').downcase.to_sym
-      }
+      item = item_hash.transform_keys { |key| Utils.snake_sym(key) }
 
       next unless item[:main_key]
 
@@ -302,13 +301,7 @@ class BDOCodexSearcher
           recipes.push recipe_hash
         end
       rescue StandardError => error
-        puts @cli.red("if you're not messing with the code, you should never see this. get_item_codex_data broke.")
-
-        File.open(ENVData::ERROR_LOG, 'a+') do |file|
-          file.write(error.full_message)
-          file.write("\n\r")
-        end
-
+        log_error error, "if you're not messing with the code, you should never see this. get_item_codex_data broke."
         next
       end
     end

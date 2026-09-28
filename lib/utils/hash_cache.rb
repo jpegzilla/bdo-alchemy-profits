@@ -23,12 +23,8 @@ module Utils
     end
 
     def write(data)
-      item_map = read_all
-      File.open(@cache_file, 'w') do |file|
-        new_data = { **item_map, **data }
-
-        file.write new_data.to_json
-      end
+      @all_content.merge!(data)
+      File.write(@cache_file, @all_content.to_json)
     end
   end
 end

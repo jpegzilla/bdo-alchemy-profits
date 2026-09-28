@@ -58,6 +58,13 @@ module BDOAP
 
       return unless resolved
 
+      level_map_to_bdo = {
+        0 => 0, 1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5,
+        6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10, 11 => 11,
+        12 => 12, 13 => 13, 14 => 14, 15 => 15,
+        16 => 'PRI', 17 => 'DUO', 18 => 'TRI', 19 => 'TET', 20 => 'PEN',
+      }.freeze
+
       resolved.each do |item|
         subdata = HTTParty.post(
           URI(sub_url),
@@ -69,55 +76,7 @@ module BDOAP
         sleep rand
 
         if subdata&.dig('detailList')
-          level_map = {
-            0 => 0,
-            1 => 1,
-            2 => 2,
-            3 => 3,
-            4 => 4,
-            5 => 5,
-            6 => 6,
-            7 => 7,
-            8 => 8,
-            9 => 9,
-            10 => 10,
-            11 => 11,
-            12 => 12,
-            13 => 13,
-            14 => 14,
-            15 => 15,
-            16 => 16,
-            17 => 17,
-            18 => 18,
-            19 => 19,
-            20 => 20,
-          }
-
-          level_map_to_bdo = {
-            0 => 0,
-            1 => 1,
-            2 => 2,
-            3 => 3,
-            4 => 4,
-            5 => 5,
-            6 => 6,
-            7 => 7,
-            8 => 8,
-            9 => 9,
-            10 => 10,
-            11 => 11,
-            12 => 12,
-            13 => 13,
-            14 => 14,
-            15 => 15,
-            16 => 'PRI',
-            17 => 'DUO',
-            18 => 'TRI',
-            19 => 'TET',
-            20 => 'PEN',
-          }
-
-          result = subdata['detailList'] .find { |e| e['subKey'].to_s == level_map[enhance_starting_level.to_i].to_s }
+          result = subdata['detailList'].find { |e| e['subKey'].to_s == enhance_starting_level.to_s }
           if result
             constructed = "    #{result['count']} #{cli.yellow result['name'].downcase} @ #{level_map_to_bdo[result['subKey']]}"
             items_at_level.push constructed unless result['count'].to_i == 0
@@ -184,11 +143,10 @@ module BDOAP
 
         recipe_prices = market_searcher.get_all_recipe_prices item_codex_data, category
 
-        mapped_prices = recipe_prices.reverse.sort_by { |recipe| recipe[:gain].to_i }.map { |recipe| recipe[:information] }
+        mapped_prices = recipe_prices.sort_by { |recipe| recipe[:gain].to_i }.map { |recipe| recipe[:information] }
 
         out_of_stock = recipe_prices.dig(0, :out_of_stock) || []
-        out_of_stock_list = ""
-        out_of_stock.each { |item| out_of_stock_list += "\n\t  #{cli.yellow item}" }
+        out_of_stock_list = out_of_stock.map { |item| "\n\t  #{cli.yellow item}" }.join
 
         if mapped_prices.length > 0
           cli.vipiko_overwrite "done!"

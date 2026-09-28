@@ -30,17 +30,30 @@ class MarketSearcher
     @out_of_stock_items = []
   end
 
+  def market_post(url, body)
+    HTTParty.post(
+      URI(url),
+      headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
+      body: body,
+      content_type: 'application/x-www-form-urlencoded'
+    )
+  end
+
+  # DRY helper: log an error message to the CLI and append to the error log file
+  def log_error(error, message = nil)
+    puts @cli.red(message) if message
+    File.open(ENVData::ERROR_LOG, 'a+') do |file|
+      file.write(error&.full_message || error.to_s)
+      file.write("\n\r")
+    end
+  end
+
   def get_alchemy_market_data(category)
     construct_item_data(category, category == 'all')
   end
 
   def get_price_data(elem)
-    data = HTTParty.post(
-      URI(@market_sub_url),
-      headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
-      body: "#{ENVData::RVT}&mainKey=#{elem['mainKey']}&usingCleint=0",
-      content_type: 'application/x-www-form-urlencoded'
-    )
+    data = market_post(@market_sub_url, "#{ENVData::RVT}&mainKey=#{elem['mainKey']}&usingCleint=0")
 
     sleep 1
 
@@ -58,9 +71,7 @@ class MarketSearcher
   def construct_item_data(subcategory, all_subcategories)
     aggregate = aggregate_category_data(@market_list_url, @market_search_url, subcategory, all_subcategories)
 
-    filtered_aggregate = aggregate.filter do |elem|
-      elem != nil
-    end
+    filtered_aggregate = aggregate.compact
 
     # TODO: this is probably not a smart way to do this type of retry logic
     puts
@@ -78,13 +89,7 @@ class MarketSearcher
         begin
           get_price_data elem
         rescue StandardError => error
-          puts @cli.red("this could be a network failure. construct_item_data broke.")
-
-          File.open(ENVData::ERROR_LOG, 'a+') do |file|
-            file.write(error.full_message)
-            file.write("\n\r")
-          end
-
+          log_error error, "this could be a network failure. construct_item_data broke."
           []
         end
       end
@@ -92,9 +97,7 @@ class MarketSearcher
 
     puts "\n\n" unless mapped_aggregate.empty?
 
-    mapped_aggregate.sort do |a, b|
-      b['pricePerOne'] - a['pricePerOne']
-    end
+    mapped_aggregate.sort_by { |a| -a['pricePerOne'] }
   end
 
   def aggregate_category_data(url, search_url, subcategory, all_subcategories)
@@ -111,24 +114,13 @@ class MarketSearcher
     category_search_options(url, search_url).each do |category_opts|
       do_if_category_matches(make_match_options.call(category_opts[:name])) do
         begin
-          data = HTTParty.post(
-            URI(category_opts[:url]),
-            headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
-            body: category_opts[:query_string],
-            content_type: 'application/x-www-form-urlencoded'
-          )
+          data = market_post(category_opts[:url], category_opts[:query_string])
 
           sleep 1
 
           aggregate_response.push category_opts[:update].call(data) if data
         rescue StandardError => error
-          puts @cli.red("this could be a network failure. aggregate_category_data broke.")
-
-          File.open(ENVData::ERROR_LOG, 'a+') do |file|
-            file.write(error.full_message)
-            file.write("\n\r")
-          end
-
+          log_error error, "this could be a network failure. aggregate_category_data broke."
           []
         end
       end
@@ -147,22 +139,12 @@ class MarketSearcher
       ingredient_data = {}
 
       begin
-        ingredient_data = HTTParty.post(
-          URI(@market_sub_url),
-          headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
-          body: "#{ENVData::RVT}&mainKey=#{ingredient_id}&usingCleint=0",
-          content_type: 'application/x-www-form-urlencoded'
-        )
+        ingredient_data = market_post(@market_sub_url, "#{ENVData::RVT}&mainKey=#{ingredient_id}&usingCleint=0")
 
         sleep rand
       rescue StandardError => error
-        puts @cli.red("this could be a network failure. get_item_price_info broke.")
-
-        File.open(ENVData::ERROR_LOG, 'a+') do |file|
-          file.write(error.full_message)
-          file.write("\n\r")
+        log_error error, "this could be a network failure. get_item_price_info broke."
         ingredient_data = {}
-        end
       end
 
       # TODO: actually implement a normal way of handling malformed results
@@ -178,31 +160,19 @@ class MarketSearcher
           detailed_price_list = {}
 
           begin
-            detailed_price_list = HTTParty.post(
-              URI(@market_sell_buy_url),
-              headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
-              body: body_string,
-              content_type: 'application/x-www-form-urlencoded'
-            )
+            detailed_price_list = market_post(@market_sell_buy_url, body_string)
 
             detailed_price_list = {} if detailed_price_list.to_s.downcase.include? 'incapsula incident'
 
             sleep rand
           rescue StandardError => error
-            puts @cli.red("this could be a network failure. get_item_price_info broke.")
-
-            File.open(ENVData::ERROR_LOG, 'a+') do |file|
-              file.write(error&.full_message || error)
-              file.write("\n\r")
-              detailed_price_list = {}
-            end
+            log_error error, "this could be a network failure. get_item_price_info broke."
+            detailed_price_list = {}
           end
 
-          optimal_prices = detailed_price_list&.dig('marketConditionList')&.sort do |a, b|
-            b['sellCount'] - a['sellCount']
-          end
+          optimal_prices = detailed_price_list&.dig('marketConditionList')&.sort_by { |p| -p['sellCount'] }
 
-          total_stock = optimal_prices.to_a.map { |price| price["sellCount"] }.sum
+          total_stock = optimal_prices.to_a.sum { |price| price["sellCount"] }
 
           optimal_price = optimal_prices.to_a.first
 
@@ -235,12 +205,10 @@ class MarketSearcher
         potential_recipe = []
 
         recipe.each.with_index do |ingredient, ing_index|
-          ingredient_id = ingredient['id'] ? ingredient['id'] : ingredient[:id]
-          quant = ingredient['quant'] ? ingredient['quant'] : ingredient[:quant]
-          enhance_level = ingredient['enhance_level'] ? ingredient['enhance_level'] : ingredient[:enhance_level]
-          is_m_recipe = ingredient['is_m_recipe'] ? ingredient['is_m_recipe'] : ingredient[:is_m_recipe]
-          quant = 1 if quant.nil?
-          enhance_level = 0 if enhance_level.nil?
+          ingredient_id = ingredient['id']           || ingredient[:id]
+          quant         = ingredient['quant']        || ingredient[:quant]         || 1
+          enhance_level = ingredient['enhance_level']|| ingredient[:enhance_level] || 0
+          is_m_recipe   = ingredient['is_m_recipe']  || ingredient[:is_m_recipe]
 
           if @ingredient_cache[ingredient_id] && EXCHANGE_ITEMS[ingredient_id].nil? == true
             cached_ingredient = { **@ingredient_cache[ingredient_id], quant: quant, for_recipe_id: recipe_id, is_m_recipe: is_m_recipe }
@@ -259,9 +227,7 @@ class MarketSearcher
             item_price_info_hash = exchange_info
           end
 
-          item_price_info = item_price_info_hash.transform_keys { |key|
-            key.to_s.gsub(/(.)([A-Z])/,'\1_\2').downcase.to_sym
-          }
+          item_price_info = item_price_info_hash.transform_keys { |key| Utils.snake_sym(key) }
 
           # gathering out of stock items to show to the user
           stock_string = "#{quant}x [#{item_price_info[:main_key]}] #{item_price_info[:name].downcase}"
@@ -314,7 +280,7 @@ class MarketSearcher
       mapped_recipe_prices.push map_recipe_prices(potential_recipes, item_with_recipe, subcategory)
     end
 
-    mapped_recipe_prices.filter { |e| !e.nil? && !!e }
+    mapped_recipe_prices.compact
   end
 
   def map_recipe_prices(potential_recipes, item, category)
@@ -383,12 +349,7 @@ class MarketSearcher
 
     body_string = "#{ENVData::RVT}&mainKey=#{item[:id]}&subKey=0&chooseKey=0&isUp=true&keyType=0&name=#{URI.encode_www_form_component(item[:name])}"
 
-    item_price_data = HTTParty.post(
-      URI(@market_sell_buy_url),
-      headers: ENVData.get_central_market_headers(ENVData.get_incap_cookie(@region_subdomain)),
-      body: body_string,
-      content_type: 'application/x-www-form-urlencoded'
-    )
+    item_price_data = market_post(@market_sell_buy_url, body_string)
 
     item_price_data = {} if item_price_data.to_s.downcase.include? 'incapsula incident'
 

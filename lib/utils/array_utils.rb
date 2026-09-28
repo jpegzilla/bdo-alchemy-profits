@@ -18,4 +18,8 @@ module Utils
       make_permutations input, limit
     end
   end
+
+  def self.snake_sym(key)
+    key.to_s.gsub(/(.)([A-Z])/, '\1_\2').downcase.to_sym
+  end
 end
