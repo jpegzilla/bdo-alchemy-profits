@@ -370,7 +370,7 @@ class MarketSearcher
     # are some seriously mysterious alchemy recipes out there...
     ingredients_already_appeared = []
     filtered_selected_recipe = selected_recipe.filter do |ingredient|
-      return false if ingredients_already_appeared.include? ingredient[:name]
+      next false if ingredients_already_appeared.include? ingredient[:name]
       ingredients_already_appeared.push(ingredient[:name])
       true
     end
@@ -449,7 +449,6 @@ class MarketSearcher
   end
 
   def do_if_category_matches(options, &procedure)
-    procedure.call if options[:all_subcategories]
-    procedure.call if options[:subcategory] == options[:subcat_to_match]
+    procedure.call if options[:all_subcategories] || (options[:subcategory] == options[:subcat_to_match])
   end
 end
