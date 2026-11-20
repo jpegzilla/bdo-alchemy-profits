@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.license = 'MIT'
 
 
-  spec.required_ruby_version = ">= 3.4.13"
+  spec.required_ruby_version = '>= 4.0.0'
   spec.files = Dir['{lib,bin}/**/**']
   spec.require_paths = ['lib']
   spec.executables << 'bdoap'
