@@ -1,9 +1,8 @@
-﻿# frozen_string_literal: true
+# frozen_string_literal: true
 
 require 'json'
 require 'httparty'
-require 'nokogiri'
-require 'awesome_print'
+require 'cgi'
 
 require_relative '../utils/user_cli'
 require_relative '../utils/array_utils'
@@ -137,28 +136,29 @@ class BDOCodexSearcher
 
             next if ['skill level', 'exp', 'icon', 'total weight of materials'].include? category
 
-            element = Nokogiri::HTML5 raw_element.to_s
+            html = raw_element.to_s
+            text = CGI.unescapeHTML(html.gsub(/<[^>]*>/, ''))
 
-            has_subs = true if element.to_s.include? 'icon-repeat'
+            has_subs = true if html.include? 'icon-repeat'
 
             result = {
               :category => category,
-              :element => element
+              :element => text
             }
 
             if %w[title id].include? category
-              result[:element] = element.text.downcase
+              result[:element] = text.downcase
             end
 
             if category == 'type'
-              is_m_recipe = true unless %w[cooking alchemy].include? element.text.downcase
+              is_m_recipe = true unless %w[cooking alchemy].include? text.downcase
             end
 
             if %w[materials products].include? category
-              quants = element.text.scan(/\](\d+)/im).map { |e| e[0].to_i }
-              enhance_levels = element.text.scan(/](\+?\d)/im).map { |e| e[0].to_s }
+              quants = text.scan(/\](\d+)/im).map { |e| e[0].to_i }
+              enhance_levels = text.scan(/](\+?\d)/im).map { |e| e[0].to_s }
 
-              ids = element.to_s.scan(/#{@region_lang}\/item\/(\d+)/).map { |e| e[0].to_i }
+              ids = html.scan(/#{@region_lang}\/item\/(\d+)/).map { |e| e[0].to_i }
               result[:element] = ids.map.with_index { |id, i| { id: id, quant: quants[i] || 1, enhance_level: enhance_levels[i][0] == '+' ?  enhance_levels[i].to_i : 0, is_m_recipe: is_m_recipe } }.flatten
             end
 
@@ -182,8 +182,6 @@ class BDOCodexSearcher
   def get_item_recipes(item_id, item_name)
     recipe_direct_url = "https://bdocodex.com/query.php?a=recipes&type=product&item_id=#{item_id}&l=#{@region_lang}"
     mrecipe_direct_url = "https://bdocodex.com/query.php?a=mrecipes&type=product&item_id=#{item_id}&l=#{@region_lang}"
-    houserecipe_direct_url = "https://bdocodex.com/query.php?a=designs&type=product&item_id=#{item_id}&l=#{@region_lang}"
-
     # TODO: there MUST be a better way to determine which recipe to use, rather than just trying them both.
     begin
       direct_data = get_recipe_url recipe_direct_url, item_name

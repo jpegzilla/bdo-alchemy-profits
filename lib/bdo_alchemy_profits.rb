@@ -157,7 +157,7 @@ module BDOAP
         end
 
         puts "      items that were out of stock: #{out_of_stock_list}" if show_out_of_stock && out_of_stock_list.length > 0
-      rescue Interrupt => e
+      rescue Interrupt
         puts "\n\nstopping!"
       end
     end

@@ -5,7 +5,7 @@ require_relative 'lib/version'
 Gem::Specification.new do |spec|
   spec.name = 'bdoap'
   spec.version = BDOAP::VERSION
-  spec.date = '2025-04-21'
+  spec.date = '2026-09-27'
   spec.summary = 'this is a tool used to aggregate price and profit data for black desert alchemists.'
   spec.description = 'this script allows you to find alchemy recipes from bdocodex.com, compare them with live central market prices, and use that information to determine what alchemy recipes are currently profitable.'
 
@@ -16,7 +16,7 @@ Gem::Specification.new do |spec|
   spec.license = 'MIT'
 
 
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = '>= 4.0.0'
   spec.files = Dir['{lib,bin}/**/**']
   spec.require_paths = ['lib']
   spec.executables << 'bdoap'

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
+ruby "4.0.10"
 
 source 'https://rubygems.org'
 
-gem 'nokogiri'
 gem 'httparty'
 gem 'json'
 gem 'rainbow'
